@@ -49,7 +49,7 @@ const crawler = new PlaywrightCrawler({
     },
 });
 
-await crawler.run(startUrls);
+await crawler.run([{ url: 'https://tw.trip.com/flights', label: LABELS.START }]);
 
 // Exit successfully
 await Actor.exit();
