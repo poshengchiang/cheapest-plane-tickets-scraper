@@ -1,4 +1,5 @@
 export const LABELS = {
     START: 'START',
-    DETAIL: 'DETAIL',
+    OUT_BOUND: 'OUT_BOUND',
+    IN_BOUND: 'IN_BOUND',
 };
