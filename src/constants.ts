@@ -3,3 +3,8 @@ export const LABELS = {
     OUT_BOUND: 'OUT_BOUND',
     IN_BOUND: 'IN_BOUND',
 };
+
+export const PATTERN = {
+    DIRECT_ROUTE: 'DIRECT_ROUTE',
+    ALTERNATIVE_ROUTE: 'ALTERNATIVE_ROUTE',
+};
