@@ -53,24 +53,28 @@
                 "type": "object",
                 "properties": {
                     "outboundDateStart": {
+                        "title": "Outbound Start Date",
                         "type": "string",
-                        "format": "date",
-                        "description": "Start date for outbound flight search (YYYY-MM-DD)"
+                        "description": "Start date for outbound flight search (YYYY-MM-DD)",
+                        "editor": "textfield"
                     },
                     "outboundDateEnd": {
+                        "title": "Outbound End Date",
                         "type": "string",
-                        "format": "date",
-                        "description": "End date for outbound flight search (YYYY-MM-DD)"
+                        "description": "End date for outbound flight search (YYYY-MM-DD)",
+                        "editor": "textfield"
                     },
                     "inboundDateStart": {
+                        "title": "Inbound Start Date",
                         "type": "string",
-                        "format": "date",
-                        "description": "Start date for inbound flight search (YYYY-MM-DD)"
+                        "description": "Start date for inbound flight search (YYYY-MM-DD)",
+                        "editor": "textfield"
                     },
                     "inboundDateEnd": {
+                        "title": "Inbound End Date",
                         "type": "string",
-                        "format": "date",
-                        "description": "End date for inbound flight search (YYYY-MM-DD)"
+                        "description": "End date for inbound flight search (YYYY-MM-DD)",
+                        "editor": "textfield"
                     }
                 },
                 "required": ["outboundDateStart", "outboundDateEnd", "inboundDateStart", "inboundDateEnd"]
