@@ -5,7 +5,7 @@
  */
 
 // For more information, see https://docs.apify.com/sdk/js
-import { Actor } from 'apify';
+import { Actor, log } from 'apify';
 // For more information, see https://crawlee.dev
 import { PlaywrightCrawler } from 'crawlee';
 
@@ -14,22 +14,40 @@ import { PlaywrightCrawler } from 'crawlee';
 // note that we need to use `.js` even when inside TS files
 import { LABELS } from './constants.js';
 import { router } from './routes.js';
-
-interface Input {
-    startUrls: {
-        url: string;
-        method?: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'TRACE' | 'OPTIONS' | 'CONNECT' | 'PATCH';
-        headers?: Record<string, string>;
-        userData: Record<string, unknown>;
-    }[];
-    maxRequestsPerCrawl: number;
-}
+import type { Input } from './types.js';
 
 // Initialize the Apify SDK
 await Actor.init();
 
-// Structure of input is defined in input_schema.json
-const { maxRequestsPerCrawl = 10 } = (await Actor.getInput<Input>()) ?? ({} as Input);
+// Read input from Actor configuration
+const input = (await Actor.getInput<Input>()) ?? ({} as Input);
+
+// Validate required inputs
+if (!input.mainDepartureCity || !input.targetCity || !input.timePeriods || input.timePeriods.length === 0) {
+    throw new Error('Missing required input: mainDepartureCity, targetCity, and timePeriods are required');
+}
+
+// Extract parameters with defaults
+const {
+    mainDepartureCity,
+    targetCity,
+    alternativeDepartureCities = [],
+    class: cabinClass = 'Economy',
+    numberOfPeople = 1,
+    timePeriods,
+    airlines = [],
+    maxRequestsPerCrawl = 1000,
+} = input;
+
+log.info('Actor input received:', {
+    mainDepartureCity,
+    targetCity,
+    alternativeDepartureCities,
+    cabinClass,
+    numberOfPeople,
+    timePeriodsCount: timePeriods.length,
+    airlinesFilter: airlines.length > 0 ? airlines : 'none',
+});
 
 const proxyConfiguration = await Actor.createProxyConfiguration({
     groups: ['RESIDENTIAL'],
@@ -39,7 +57,9 @@ const proxyConfiguration = await Actor.createProxyConfiguration({
 const crawler = new PlaywrightCrawler({
     proxyConfiguration,
     maxRequestsPerCrawl,
+    headless: true,
     requestHandler: router,
+    navigationTimeoutSecs: 10,
     launchContext: {
         launchOptions: {
             args: [
@@ -49,7 +69,9 @@ const crawler = new PlaywrightCrawler({
     },
 });
 
-await crawler.run([{ url: 'https://tw.trip.com/flights', label: LABELS.START }]);
+const startUrls = [{ url: 'https://tw.trip.com/', label: LABELS.START, userData: input }];
+
+await crawler.run(startUrls);
 
 // Exit successfully
 await Actor.exit();
