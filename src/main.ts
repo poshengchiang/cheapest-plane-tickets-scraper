@@ -59,7 +59,8 @@ const crawler = new PlaywrightCrawler({
     maxRequestsPerCrawl,
     headless: true,
     requestHandler: router,
-    navigationTimeoutSecs: 10,
+    navigationTimeoutSecs: 60, // Increased for SSE responses that take longer
+    preNavigationHooks: [captureSSEResponseHook],
     launchContext: {
         launchOptions: {
             args: [
