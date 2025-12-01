@@ -11,7 +11,7 @@ export interface TimePeriod {
 export interface Input {
     mainDepartureCity: string; // Primary departure city/airport code (e.g., 'TPE')
     targetCity: string; // Final destination city/airport code (e.g., 'NRT')
-    class: 'Economy' | 'Business' | 'First'; // Cabin class
+    cabinClass: 'Economy' | 'Business' | 'First'; // Cabin class
     numberOfPeople: number; // Number of passengers (1-9)
     timePeriods: TimePeriod[]; // Travel date ranges
 

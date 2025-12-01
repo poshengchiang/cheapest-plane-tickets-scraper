@@ -32,7 +32,7 @@ const {
     mainDepartureCity,
     targetCity,
     alternativeDepartureCities = [],
-    class: cabinClass = 'Economy',
+    cabinClass = 'Economy',
     numberOfPeople = 1,
     timePeriods,
     airlines = [],
