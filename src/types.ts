@@ -38,7 +38,7 @@ export interface FlightLeg {
     arrivalAirport: string;
     arrivalTime: string; // ISO 8601 format
     flightSegment: FlightSegment;
-    durationTimeHours: number;
+    durationTimeMinutes: number;
 }
 
 export interface FlightInfo {
