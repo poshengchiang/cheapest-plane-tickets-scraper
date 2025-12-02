@@ -84,3 +84,51 @@ export function createInBoundUrl(params: InBoundParams): string {
 
     return `${baseUrl}?${searchParams.toString()}`;
 }
+
+export function extractOutboundFlightData(sseResponseData: any): RouteResult | null {
+    try {
+        const { recordCount } = sseResponseData.basicInfo;
+        if (recordCount <= 1) {
+            log.warning('No outbound flights found in SSE response', { recordCount });
+        }
+
+        const flightsData = sseResponseData.itineraryList || [];
+
+        const flightInfos: FlightInfo[] = flightsData.map((flightData: any) => {
+            const { totalPrice } = flightData.policies[0].price;
+            const totalFlights = flightData.journeyList[0].transSectionList.length;
+            const totalTimeMinutes = flightData.journeyList[0].duration;
+
+            const departureCity = flightData.journeyList[0].transSectionList[0].departPoint.cityName;
+            const targetCity = flightData.journeyList[0].transSectionList[totalFlights - 1].arrivePoint.cityName;
+
+            const flights = flightData.journeyList[0].transSectionList.map((flightSection: any) => {
+                return {
+                    departureAirport: flightSection.departPoint.airportCode,
+                    departureTime: flightSection.departDateTime,
+                    arrivalAirport: flightSection.arrivePoint.airportCode,
+                    arrivalTime: flightSection.arriveDateTime,
+                    flightSegment: {
+                        airline: flightSection.flightInfo.airlineCode,
+                        flightNumber: flightSection.flightInfo.flightNo,
+                    },
+                    durationTimeMinutes: flightSection.duration,
+                };
+            });
+
+            return {
+                totalPrice,
+                totalTimeMinutes,
+                departureCity,
+                targetCity,
+                totalFlights,
+                flights,
+            };
+        });
+
+        return flightInfos;
+    } catch (error) {
+        log.error('Failed to extract flight data', { error, sseResponse });
+        return null;
+    }
+}
