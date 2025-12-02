@@ -47,6 +47,8 @@ export interface FlightInfo {
     departureCity: string;
     targetCity: string;
     totalFlights: number;
+    productId: string;
+    policyId: string;
     flights: FlightLeg[];
 }
 
