@@ -35,7 +35,7 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) 
 
                 const extractedFlightData = extractOutboundFlightData(responseData);
                 if (extractedFlightData) {
-                    request.userData.sseResponse = extractedFlightData;
+                    request.userData.outboundData = extractedFlightData;
                     // Store in userData so requestHandler can access it
                     log.info('Captured SSE response');
                 } else {
