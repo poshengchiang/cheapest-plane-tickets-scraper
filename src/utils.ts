@@ -49,7 +49,7 @@ export interface InBoundParams {
     babyqty?: number; // Number of babies (default: 0)
 }
 
-export function createInBoundUrl(params: InBoundParams): string {
+export function createInboundUrl(params: InBoundParams): string {
     const {
         departureCityCode,
         arrivalCityCode,
