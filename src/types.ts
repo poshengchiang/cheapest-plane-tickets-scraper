@@ -1,3 +1,5 @@
+import type { ALTERNATIVE_ROUTE_STEPS, PATTERN } from './constants.js';
+
 export interface TimePeriod {
     outboundDate: string; // YYYY-MM-DD format
     inboundDate: string; // YYYY-MM-DD format
@@ -19,6 +21,20 @@ export interface Input {
     transferTimeHours?: number; // Minimum transfer time in hours (default: 3)
     adcBufferHours?: number; // Buffer for ADC searches in hours (default: 24)
     maxRequestsPerCrawl?: number; // Request limit (default: 1000)
+}
+
+export interface DirectRouteSearchInfo {
+    departureCityCode: string;
+    targetCityCode: string;
+    departureDate: string; // YYYY-MM-DD format
+    returnDate: string; // YYYY-MM-DD format
+    cabinClass: string; // 'Y' for Economy, 'C' for Business, 'F' for First
+    quantity: number; // Number of passengers
+}
+
+export interface AlternativeRouteSearchInfo extends DirectRouteSearchInfo {
+    intermediateCityCode: string;
+    step: ALTERNATIVE_ROUTE_STEPS;
 }
 
 /**
@@ -53,7 +69,7 @@ export interface FlightInfo {
 }
 
 export interface RouteResult {
-    pattern: 'DIRECT_ROUTE' | 'ALTERNATIVE_ROUTE';
+    pattern: PATTERN;
     flightInfo: FlightInfo;
     timePeriod: {
         outboundDate: string; // Actual selected date
