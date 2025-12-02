@@ -16,6 +16,8 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) 
                 // Parse SSE events
                 const lines = text.split('\n');
 
+                let responseData = null;
+
                 for (const line of lines) {
                     log.info(`SSE response line preview: ${line.slice(0, 300)}`);
 
@@ -23,7 +25,7 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) 
                         const data = line.slice(5).trim(); // Remove 'data:' prefix and trim
                         if (data) {
                             try {
-                                request.userData.sseResponse = JSON.parse(data);
+                                responseData = JSON.parse(data);
                             } catch {
                                 log.warning(`Failed to parse SSE line: ${line.substring(0, 100)}`);
                             }
@@ -31,8 +33,14 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) 
                     }
                 }
 
-                // Store in userData so requestHandler can access it
-                log.info('Captured SSE response');
+                const extractedFlightData = extractOutboundFlightData(responseData);
+                if (extractedFlightData) {
+                    request.userData.sseResponse = extractedFlightData;
+                    // Store in userData so requestHandler can access it
+                    log.info('Captured SSE response');
+                } else {
+                    log.warning('No flight data extracted from SSE response');
+                }
             } catch (error) {
                 log.error('Failed to parse SSE response', { error });
             }
