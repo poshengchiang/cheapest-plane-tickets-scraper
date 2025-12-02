@@ -1,8 +1,6 @@
 export interface TimePeriod {
-    outboundDateStart: string; // YYYY-MM-DD format
-    outboundDateEnd: string; // YYYY-MM-DD format
-    inboundDateStart: string; // YYYY-MM-DD format
-    inboundDateEnd: string; // YYYY-MM-DD format
+    outboundDate: string; // YYYY-MM-DD format
+    inboundDate: string; // YYYY-MM-DD format
 }
 
 /**
