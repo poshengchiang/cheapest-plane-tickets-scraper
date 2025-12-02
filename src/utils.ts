@@ -93,6 +93,7 @@ export function extractOutboundFlightData(sseResponseData: any): RouteResult | n
         }
 
         const flightsData = sseResponseData.itineraryList || [];
+        const { productId } = sseResponseData.basicInfo;
 
         const flightInfos: FlightInfo[] = flightsData.map((flightData: any) => {
             const { totalPrice } = flightData.policies[0].price;
@@ -101,6 +102,8 @@ export function extractOutboundFlightData(sseResponseData: any): RouteResult | n
 
             const departureCity = flightData.journeyList[0].transSectionList[0].departPoint.cityName;
             const targetCity = flightData.journeyList[0].transSectionList[totalFlights - 1].arrivePoint.cityName;
+
+            const { policyId } = flightData.policies[0];
 
             const flights = flightData.journeyList[0].transSectionList.map((flightSection: any) => {
                 return {
@@ -122,6 +125,8 @@ export function extractOutboundFlightData(sseResponseData: any): RouteResult | n
                 departureCity,
                 targetCity,
                 totalFlights,
+                productId,
+                policyId,
                 flights,
             };
         });
