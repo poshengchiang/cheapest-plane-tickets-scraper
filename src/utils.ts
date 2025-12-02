@@ -1,3 +1,7 @@
+import { log } from 'apify';
+
+import type { FlightInfo } from './types.js';
+
 export interface OutBoundParams {
     departureCityCode: string;
     arrivalCityCode: string;
@@ -85,7 +89,7 @@ export function createInBoundUrl(params: InBoundParams): string {
     return `${baseUrl}?${searchParams.toString()}`;
 }
 
-export function extractOutboundFlightData(sseResponseData: any): RouteResult | null {
+export function extractOutboundFlightData(sseResponseData: any): FlightInfo[] | null {
     try {
         const { recordCount } = sseResponseData.basicInfo;
         if (recordCount <= 1) {
@@ -133,7 +137,7 @@ export function extractOutboundFlightData(sseResponseData: any): RouteResult | n
 
         return flightInfos;
     } catch (error) {
-        log.error('Failed to extract flight data', { error, sseResponse });
+        log.error('Failed to extract flight data', { error, sseResponseData });
         return null;
     }
 }
