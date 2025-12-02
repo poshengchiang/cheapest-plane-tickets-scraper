@@ -1,6 +1,8 @@
 import { log } from 'apify';
 import type { PlaywrightHook } from 'crawlee';
 
+import { extractOutboundFlightData } from './utils.js';
+
 /**
  * Pre-navigation hook to capture SSE (Server-Sent Events) responses from Trip.com API
  */
