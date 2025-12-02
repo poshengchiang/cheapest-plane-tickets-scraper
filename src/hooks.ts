@@ -1,4 +1,4 @@
-import { Dataset, log } from 'apify';
+import { log } from 'apify';
 import type { PlaywrightHook } from 'crawlee';
 
 import { extractOutboundFlightData } from './utils.js';
@@ -35,11 +35,11 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) 
                     }
                 }
 
-                const extractedFlightData = extractOutboundFlightData(responseData);
-                if (extractedFlightData) {
-                    request.userData.outboundData = extractedFlightData;
+                const extractedFlightsData = extractOutboundFlightData(responseData);
+                if (extractedFlightsData) {
                     // Store in userData so requestHandler can access it
                     log.info('Captured SSE response');
+                    request.userData.outboundData = extractedFlightsData;
                 } else {
                     log.warning('No flight data extracted from SSE response');
                 }
