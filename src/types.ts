@@ -43,7 +43,7 @@ export interface FlightLeg {
 
 export interface FlightInfo {
     totalPrice: number;
-    totalTimeHours: number;
+    totalTimeMinutes: number;
     departureCity: string;
     targetCity: string;
     totalFlights: number;
