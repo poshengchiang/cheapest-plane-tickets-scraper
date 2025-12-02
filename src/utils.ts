@@ -4,7 +4,7 @@ import type { FlightInfo } from './types.js';
 
 export interface OutBoundParams {
     departureCityCode: string;
-    arrivalCityCode: string;
+    targetCityCode: string;
     departureDate: string; // Departure date (YYYY-MM-DD format)
     returnDate: string; // Return date (YYYY-MM-DD format)
     cabinClass?: string; // Cabin class (default: 'y' for economy)
@@ -12,12 +12,12 @@ export interface OutBoundParams {
 }
 
 export function createOutBoundUrl(params: OutBoundParams): string {
-    const { departureCityCode, arrivalCityCode, departureDate, returnDate, cabinClass = 'y', quantity = 1 } = params;
+    const { departureCityCode, targetCityCode, departureDate, returnDate, cabinClass = 'y', quantity = 1 } = params;
 
     const baseUrl = 'https://tw.trip.com/flights/showfarefirst';
     const searchParams = new URLSearchParams({
         dcity: departureCityCode,
-        acity: arrivalCityCode,
+        acity: targetCityCode,
         ddate: departureDate,
         rdate: returnDate,
         triptype: 'rt', // Round trip
@@ -34,7 +34,7 @@ export function createOutBoundUrl(params: OutBoundParams): string {
 
 export interface InBoundParams {
     departureCityCode: string; // Departure city code (e.g., 'tpe')
-    arrivalCityCode: string; // Arrival city code (e.g., 'prg')
+    targetCityCode: string; // Arrival city code (e.g., 'prg')
     departureDate: string; // Departure date (YYYY-MM-DD format)
     returnDate: string; // Return date (YYYY-MM-DD format)
     // dcityName: string; // Departure city name (e.g., 'Taipei'), but seems not required
@@ -52,7 +52,7 @@ export interface InBoundParams {
 export function createInboundUrl(params: InBoundParams): string {
     const {
         departureCityCode,
-        arrivalCityCode,
+        targetCityCode,
         departureDate,
         returnDate,
         productId,
@@ -75,7 +75,7 @@ export function createInboundUrl(params: InBoundParams): string {
         babyqty: String(babyqty),
         jumptype: 'GoToNextJournay',
         dcity: departureCityCode,
-        acity: arrivalCityCode,
+        acity: targetCityCode,
         ddate: departureDate,
         rdate: returnDate,
         currentseqno: '2',
