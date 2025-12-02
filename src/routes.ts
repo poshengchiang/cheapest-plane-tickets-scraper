@@ -1,18 +1,53 @@
 import { createPlaywrightRouter, Dataset } from 'crawlee';
 
-import { LABELS } from './constants.js';
+import { LABELS, PATTERN } from './constants.js';
+import type { DirectRouteSearchInfo, FlightInfo } from './types.js';
+import { createInboundUrl } from './utils.js';
 
 export const router = createPlaywrightRouter();
 
-router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page }) => {
-    if (request.userData.processed) {
-        log.info(`Request already processed: ${request.loadedUrl}`);
+router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
+    let outboundData;
+    outboundData = request.userData.outboundData as FlightInfo[] | undefined;
+
+    if (!outboundData) {
+        log.warning('No outbound flight data found in request.userData');
+        await page.waitForTimeout(3000);
+        outboundData = request.userData.outboundData as FlightInfo[] | undefined;
+    }
+
+    if (!outboundData) {
+        log.error('Outbound flight data is still missing after wait. Skipping dataset push.');
         return;
     }
 
-    await page.waitForTimeout(3000);
-    if (!request.userData.processed) {
-        log.warning(`Request still not processed after waiting: ${request.loadedUrl}`);
+    if (request.userData.pattern === PATTERN.DIRECT_ROUTE) {
+        const searchInfo = request.userData.searchInfo as DirectRouteSearchInfo;
+
+        for (const flightInfo of outboundData) {
+            const inboundFlightSearchUrl = createInboundUrl({
+                departureCityCode: searchInfo.departureCityCode,
+                targetCityCode: searchInfo.targetCityCode,
+                departureDate: searchInfo.departureDate,
+                returnDate: searchInfo.returnDate,
+                cabinClass: searchInfo.cabinClass,
+                productId: flightInfo.productId,
+                policyId: flightInfo.policyId,
+                quantity: searchInfo.quantity,
+            });
+
+            await crawler.addRequests([
+                {
+                    url: inboundFlightSearchUrl,
+                    label: LABELS.IN_BOUND,
+                    userData: {
+                        outboundFlightInfo: flightInfo,
+                        searchInfo,
+                        pattern: request.userData.pattern,
+                    },
+                },
+            ]);
+        }
     }
 });
 
