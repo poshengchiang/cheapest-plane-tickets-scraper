@@ -33,49 +33,28 @@ export interface FlightSegment {
  * Individual flight leg information
  */
 export interface FlightLeg {
-    leg: string; // e.g., "outbound", "inbound", "MDC_to_ADC", etc.
     departureAirport: string;
     departureTime: string; // ISO 8601 format
     arrivalAirport: string;
     arrivalTime: string; // ISO 8601 format
-    flightSegments: FlightSegment[];
+    flightSegment: FlightSegment;
     durationTimeHours: number;
 }
 
-/**
- * Base interface for route results
- */
-interface BaseRoute {
+export interface FlightInfo {
     totalPrice: number;
     totalTimeHours: number;
+    departureCity: string;
+    targetCity: string;
+    totalFlights: number;
+    flights: FlightLeg[];
+}
+
+export interface RouteResult {
+    pattern: 'DIRECT_ROUTE' | 'ALTERNATIVE_ROUTE';
+    flightInfo: FlightInfo;
     timePeriod: {
         outboundDate: string; // Actual selected date
         inboundDate: string; // Actual selected date
     };
 }
-
-/**
- * Direct route result (MDC → TC)
- */
-export interface DirectRoute extends BaseRoute {
-    departureCity: string; // MDC
-    targetCity: string; // TC
-    totalFlights: 2; // outbound + inbound
-    flights: FlightLeg[]; // 2 legs: outbound, inbound
-}
-
-/**
- * Alternative route result via intermediate city (MDC → ADC → TC)
- */
-export interface AlternativeRoute extends BaseRoute {
-    departureCity: string; // MDC
-    intermediateCity: string; // ADC
-    targetCity: string; // TC
-    totalFlights: 4; // MDC→ADC, ADC→TC, TC→ADC, ADC→MDC
-    flights: FlightLeg[]; // 4 legs: MDC_to_ADC, ADC_to_TC, TC_to_ADC, ADC_to_MDC
-}
-
-/**
- * Union type for all route results
- */
-export type RouteResult = DirectRoute | AlternativeRoute;
