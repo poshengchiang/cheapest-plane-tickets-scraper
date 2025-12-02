@@ -58,7 +58,6 @@ interface BaseRoute {
  * Direct route result (MDC → TC)
  */
 export interface DirectRoute extends BaseRoute {
-    routeType: 'DIRECT';
     departureCity: string; // MDC
     targetCity: string; // TC
     totalFlights: 2; // outbound + inbound
@@ -69,7 +68,6 @@ export interface DirectRoute extends BaseRoute {
  * Alternative route result via intermediate city (MDC → ADC → TC)
  */
 export interface AlternativeRoute extends BaseRoute {
-    routeType: 'ALTERNATIVE';
     departureCity: string; // MDC
     intermediateCity: string; // ADC
     targetCity: string; // TC
