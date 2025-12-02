@@ -1,4 +1,4 @@
-import { log } from 'apify';
+import { Dataset, log } from 'apify';
 import type { PlaywrightHook } from 'crawlee';
 
 import { extractOutboundFlightData } from './utils.js';
