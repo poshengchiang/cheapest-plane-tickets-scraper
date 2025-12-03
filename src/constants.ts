@@ -1,8 +1,8 @@
-export const LABELS = {
-    START: 'START',
-    OUT_BOUND: 'OUT_BOUND',
-    IN_BOUND: 'IN_BOUND',
-};
+export enum LABELS {
+    START = 'START',
+    OUT_BOUND = 'OUT_BOUND',
+    IN_BOUND = 'IN_BOUND',
+}
 
 export enum PATTERN {
     DIRECT_ROUTE = 'DIRECT_ROUTE',
