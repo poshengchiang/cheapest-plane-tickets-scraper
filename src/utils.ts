@@ -1,15 +1,7 @@
 import { log } from 'apify';
 import type { PlaywrightCrawlingContext } from 'crawlee';
 
-import { LABELS, PATTERN } from './constants.js';
-import type {
-    AlternativeRouteRequest,
-    DirectRouteRequest,
-    FlightData,
-    FlightInfo,
-    FlightResponseData,
-    FlightSection,
-} from './types.js';
+import type { FlightData, FlightInfo, FlightResponseData, FlightSection } from './types.js';
 
 /**
  * Wait for data to appear in request.userData with periodic checks
@@ -201,61 +193,4 @@ export function combineOutboundInboundFlightInfo(outbound: FlightInfo, inbound: 
         policyId: inbound.policyId,
         flights: [...outbound.flights, ...inbound.flights],
     };
-}
-
-export function createRouteRequest(
-    pattern: PATTERN,
-    departureCityCode: string,
-    targetCityCode: string,
-    departureDate: string,
-    returnDate: string,
-    numberOfPeople: number,
-    cabinClass: string,
-    intermediateCityCode?: string,
-): DirectRouteRequest | AlternativeRouteRequest {
-    const url = createOutBoundUrl({
-        departureCityCode,
-        targetCityCode,
-        departureDate,
-        returnDate,
-        quantity: numberOfPeople,
-    });
-
-    if (pattern === PATTERN.DIRECT_ROUTE) {
-        return {
-            url,
-            label: LABELS.OUT_BOUND,
-            userData: {
-                pattern: PATTERN.DIRECT_ROUTE,
-                searchInfo: {
-                    departureCityCode,
-                    targetCityCode,
-                    departureDate,
-                    returnDate,
-                    cabinClass,
-                    quantity: numberOfPeople,
-                },
-            },
-        };
-    }
-
-    if (pattern === PATTERN.ALTERNATIVE_ROUTE) {
-        return {
-            url,
-            label: LABELS.OUT_BOUND,
-            userData: {
-                pattern: PATTERN.ALTERNATIVE_ROUTE,
-                searchInfo: {
-                    departureCityCode,
-                    intermediateCityCode,
-                    targetCityCode,
-                    departureDate,
-                    returnDate,
-                    cabinClass,
-                    quantity: numberOfPeople,
-                },
-            },
-        };
-    }
-    throw new Error(`Unsupported pattern: ${pattern}`);
 }

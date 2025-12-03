@@ -12,11 +12,11 @@ import { PlaywrightCrawler } from 'crawlee';
 // this is ESM project, and as such, it requires you to specify extensions in your relative imports
 // read more about this here: https://nodejs.org/docs/latest-v18.x/api/esm.html#mandatory-file-extensions
 // note that we need to use `.js` even when inside TS files
-import { PATTERN } from './constants.js';
+import { LABELS } from './constants.js';
 import { captureResponseHook, captureSSEResponseHook } from './hooks.js';
 import { router } from './routes.js';
 import type { DirectRouteRequest, Input } from './types.js';
-import { createRouteRequest } from './utils.js';
+import { createOutBoundUrl } from './utils.js';
 
 // Initialize the Apify SDK
 await Actor.init();
@@ -75,30 +75,50 @@ const crawler = new PlaywrightCrawler({
 const startUrls: DirectRouteRequest[] = [];
 
 timePeriods.forEach((period) => {
-    const request = createRouteRequest(
-        PATTERN.DIRECT_ROUTE,
-        mainDepartureCity,
-        targetCity,
-        period.outboundDate,
-        period.inboundDate,
-        numberOfPeople,
-        cabinClass,
-    );
-    startUrls.push(request);
+    const { outboundDate, inboundDate } = period;
+    const url = createOutBoundUrl({
+        departureCityCode: mainDepartureCity,
+        targetCityCode: targetCity,
+        departureDate: outboundDate,
+        returnDate: inboundDate,
+        quantity: numberOfPeople,
+    });
+
+    const directRouteRequest = {
+        url,
+        label: LABELS.DIRECT_OUTBOUND,
+        userData: {
+            searchInfo: {
+                departureCityCode: mainDepartureCity,
+                targetCityCode: targetCity,
+                departureDate: outboundDate,
+                returnDate: inboundDate,
+                cabinClass,
+                quantity: numberOfPeople,
+            },
+        },
+    };
+
+    startUrls.push(directRouteRequest);
 
     if (alternativeDepartureCities.length > 0) {
         alternativeDepartureCities.forEach((intermediateCity) => {
-            const altRequest = createRouteRequest(
-                PATTERN.ALTERNATIVE_ROUTE,
-                mainDepartureCity,
-                targetCity,
-                period.outboundDate,
-                period.inboundDate,
-                numberOfPeople,
-                cabinClass,
-                intermediateCity,
-            );
-            startUrls.push(altRequest);
+            const altRouteRequest = {
+                url,
+                label: LABELS.ALT_LEG1_OUTBOUND,
+                userData: {
+                    searchInfo: {
+                        departureCityCode: mainDepartureCity,
+                        intermediateCityCode: intermediateCity,
+                        targetCityCode: targetCity,
+                        departureDate: outboundDate,
+                        returnDate: inboundDate,
+                        cabinClass,
+                        quantity: numberOfPeople,
+                    },
+                },
+            };
+            startUrls.push(altRouteRequest);
         });
     }
 });

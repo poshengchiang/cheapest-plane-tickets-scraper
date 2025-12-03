@@ -36,7 +36,6 @@ export interface DirectRouteRequest {
     url: string;
     label: LABELS;
     userData: {
-        pattern: PATTERN;
         searchInfo: DirectRouteSearchInfo;
     };
 }
@@ -50,7 +49,6 @@ export interface AlternativeRouteRequest {
     url: string;
     label: LABELS;
     userData: {
-        pattern: PATTERN;
         searchInfo: AlternativeRouteSearchInfo;
     };
 }

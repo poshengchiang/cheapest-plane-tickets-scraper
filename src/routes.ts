@@ -1,51 +1,77 @@
 import { createPlaywrightRouter, Dataset } from 'crawlee';
 
-import { LABELS, PATTERN, TOP_FLIGHTS_TO_COLLECT_LIMIT } from './constants.js';
+import { LABELS, TOP_FLIGHTS_TO_COLLECT_LIMIT } from './constants.js';
 import type { DirectRouteSearchInfo, FlightInfo } from './types.js';
 import { combineOutboundInboundFlightInfo, createInboundUrl, waitForUserData } from './utils.js';
 
 export const router = createPlaywrightRouter();
 
-router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
+router.addHandler(LABELS.DIRECT_OUTBOUND, async ({ request, log, page, crawler }) => {
     const outboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'outboundFlightInfoList');
 
     if (!outboundFlightInfoList) {
         log.error('Outbound flight data is still missing after 30 seconds.');
         throw new Error('Missing outbound flight data after 30 seconds of waiting');
     }
+    const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
-    if (request.userData.pattern === PATTERN.DIRECT_ROUTE) {
-        const searchInfo = request.userData.searchInfo as DirectRouteSearchInfo;
-        const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
+    const searchInfo = request.userData.searchInfo as DirectRouteSearchInfo;
 
-        for (const flightInfo of topFlightInfos) {
-            const inboundFlightSearchUrl = createInboundUrl({
-                departureCityCode: searchInfo.departureCityCode,
-                targetCityCode: searchInfo.targetCityCode,
-                departureDate: searchInfo.departureDate,
-                returnDate: searchInfo.returnDate,
-                cabinClass: searchInfo.cabinClass,
-                productId: flightInfo.productId,
-                policyId: flightInfo.policyId,
-                quantity: searchInfo.quantity,
-            });
+    for (const flightInfo of topFlightInfos) {
+        const inboundFlightSearchUrl = createInboundUrl({
+            departureCityCode: searchInfo.departureCityCode,
+            targetCityCode: searchInfo.targetCityCode,
+            departureDate: searchInfo.departureDate,
+            returnDate: searchInfo.returnDate,
+            cabinClass: searchInfo.cabinClass,
+            productId: flightInfo.productId,
+            policyId: flightInfo.policyId,
+            quantity: searchInfo.quantity,
+        });
 
-            await crawler.addRequests([
-                {
-                    url: inboundFlightSearchUrl,
-                    label: LABELS.IN_BOUND,
-                    userData: {
-                        outboundFlightInfo: flightInfo,
-                        searchInfo,
-                        pattern: request.userData.pattern,
-                    },
+        await crawler.addRequests([
+            {
+                url: inboundFlightSearchUrl,
+                label: LABELS.DIRECT_OUTBOUND,
+                userData: {
+                    outboundFlightInfo: flightInfo,
+                    searchInfo,
+                    pattern: request.userData.pattern,
                 },
-            ]);
-        }
+            },
+        ]);
     }
+
+    // const searchInfo = request.userData.searchInfo as AlternativeRouteSearchInfo;
+    // if (searchInfo.step === ALTERNATIVE_ROUTE_STEPS.TO_INTERMEDIATE) {
+    //     for (const flightInfo of topFlightInfos) {
+    //         const inboundFlightSearchUrl = createInboundUrl({
+    //             departureCityCode: searchInfo.intermediateCityCode,
+    //             targetCityCode: searchInfo.targetCityCode,
+    //             departureDate: searchInfo.departureDate,
+    //             returnDate: searchInfo.returnDate,
+    //             cabinClass: searchInfo.cabinClass,
+    //             productId: flightInfo.productId,
+    //             policyId: flightInfo.policyId,
+    //             quantity: searchInfo.quantity,
+    //         });
+
+    //         await crawler.addRequests([
+    //             {
+    //                 url: inboundFlightSearchUrl,
+    //                 label: LABELS.IN_BOUND,
+    //                 userData: {
+    //                     outboundFlightInfo: flightInfo,
+    //                     searchInfo,
+    //                     pattern: request.userData.pattern,
+    //                 },
+    //             },
+    //         ]);
+    //     }
+    // }
 });
 
-router.addHandler(LABELS.IN_BOUND, async ({ request, page, log }) => {
+router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page, log }) => {
     const inboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'inboundFlightInfoList');
 
     if (!inboundFlightInfoList) {
@@ -78,4 +104,23 @@ router.addHandler(LABELS.IN_BOUND, async ({ request, page, log }) => {
     });
 
     await Promise.all(combineFlightInfoDatasetPromises);
+
+    // const searchInfo = request.userData.searchInfo as AlternativeRouteSearchInfo;
+    // if (searchInfo.step === ALTERNATIVE_ROUTE_STEPS.TO_INTERMEDIATE) {
+    //     const combineFlightInfoDatasetPromises = topFlightInfos.map(async (inboundFlightInfo) => {
+    //         const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
+    //         return await crawler.addRequests([
+    //             {
+    //                 url: inboundFlightSearchUrl,
+    //                 label: LABELS.IN_BOUND,
+    //                 userData: {
+    //                     outboundFlightInfo: flightInfo,
+    //                     searchInfo,
+    //                     pattern: request.userData.pattern,
+    //                 },
+    //             },
+    //         ]);
+    //     });
+    //     await Promise.all(combineFlightInfoDatasetPromises);
+    // }
 });
