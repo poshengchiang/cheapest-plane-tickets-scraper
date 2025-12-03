@@ -76,7 +76,7 @@ const startUrls: DirectRouteRequest[] = [];
 
 timePeriods.forEach((period) => {
     const { outboundDate, inboundDate } = period;
-    const url = createOutBoundUrl({
+    const directRouteUrl = createOutBoundUrl({
         departureCityCode: mainDepartureCity,
         targetCityCode: targetCity,
         departureDate: outboundDate,
@@ -85,7 +85,7 @@ timePeriods.forEach((period) => {
     });
 
     const directRouteRequest = {
-        url,
+        url: directRouteUrl,
         label: LABELS.DIRECT_OUTBOUND,
         userData: {
             searchInfo: {
@@ -103,8 +103,16 @@ timePeriods.forEach((period) => {
 
     if (alternativeDepartureCities.length > 0) {
         alternativeDepartureCities.forEach((intermediateCity) => {
+            const altUrl = createOutBoundUrl({
+                departureCityCode: mainDepartureCity,
+                targetCityCode: intermediateCity,
+                departureDate: outboundDate,
+                returnDate: inboundDate,
+                quantity: numberOfPeople,
+            });
+
             const altRouteRequest = {
-                url,
+                url: altUrl,
                 label: LABELS.ALT_LEG1_OUTBOUND,
                 userData: {
                     searchInfo: {
