@@ -72,7 +72,19 @@ const crawler = new PlaywrightCrawler({
     },
 });
 
-const startUrls = [{ url: 'https://tw.trip.com/', label: LABELS.START, userData: input }];
+const startUrls: DirectRouteRequest[] = [];
+
+timePeriods.forEach((period) => {
+    const request = createDirectRouteRequest(
+        mainDepartureCity,
+        targetCity,
+        period.outboundDate,
+        period.inboundDate,
+        numberOfPeople,
+        cabinClass,
+    );
+    startUrls.push(request);
+});
 
 await crawler.run(startUrls);
 
