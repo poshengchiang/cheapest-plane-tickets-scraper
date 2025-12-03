@@ -59,6 +59,7 @@ const proxyConfiguration = await Actor.createProxyConfiguration({
 const crawler = new PlaywrightCrawler({
     proxyConfiguration,
     maxRequestsPerCrawl,
+    maxConcurrency: 3,
     headless: true,
     requestHandler: router,
     navigationTimeoutSecs: 60, // Increased for SSE responses that take longer
