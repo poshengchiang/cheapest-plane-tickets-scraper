@@ -1,4 +1,4 @@
-import { Dataset, log } from 'apify';
+import { log } from 'apify';
 import type { PlaywrightHook } from 'crawlee';
 
 import { LABELS } from './constants.js';
