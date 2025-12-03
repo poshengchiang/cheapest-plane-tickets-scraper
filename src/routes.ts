@@ -70,6 +70,7 @@ router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page, log }) => {
     const combineFlightInfoDatasetPromises = topFlightInfos.map(async (inboundFlightInfo) => {
         const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
         return await Dataset.pushData({
+            pattern: PATTERN.DIRECT_ROUTE,
             flightInfo: combinedFlightInfo,
         });
     });
