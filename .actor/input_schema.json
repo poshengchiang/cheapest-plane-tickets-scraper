@@ -25,10 +25,20 @@
             "title": "Alternative Departure Cities (ADC)",
             "type": "array",
             "description": "Intermediate cities to check for cheaper routes via multi-leg flights",
-            "editor": "stringList",
+            "editor": "select",
             "items": {
-                "type": "string"
+                "type": "string",
+                "enum": ["HKG", "ICN", "SIN", "BKK", "KUL", "MNL"],
+                "enumTitles": [
+                    "Hong Kong (HKG)",
+                    "Seoul (ICN)",
+                    "Singapore (SIN)",
+                    "Bangkok (BKK)",
+                    "Kuala Lumpur (KUL)",
+                    "Manila (MNL)"
+                ]
             },
+            "uniqueItems": true,
             "default": [],
             "prefill": ["HKG", "ICN"]
         },
