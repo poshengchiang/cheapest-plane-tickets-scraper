@@ -26,7 +26,7 @@ export function createOutBoundUrl(params: OutBoundParams): string {
         quantity: String(quantity),
         searchboxarg: 't',
         nonstoponly: 'off',
-        sort: 'price',
+        sort: 'direct',
     });
 
     return `${baseUrl}?${searchParams.toString()}`;
@@ -84,6 +84,7 @@ export function createInboundUrl(params: InBoundParams): string {
         groupKey: policyId,
         locale,
         curr,
+        sort: 'direct',
     });
 
     return `${baseUrl}?${searchParams.toString()}`;
