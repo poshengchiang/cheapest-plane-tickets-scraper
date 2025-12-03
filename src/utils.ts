@@ -133,7 +133,7 @@ export function extractFlightData(ResponseData: FlightResponseData): FlightInfo[
     try {
         const { recordCount } = ResponseData.basicInfo;
         if (recordCount <= 1) {
-            log.warning('No outbound flights found in SSE response', { recordCount });
+            log.warning('No outbound flights found in response', { recordCount });
         }
 
         const flightsData = ResponseData.itineraryList || [];
