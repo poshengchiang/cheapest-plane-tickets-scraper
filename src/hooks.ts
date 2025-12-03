@@ -8,7 +8,11 @@ import { extractFlightData } from './utils.js';
  * Pre-navigation hook to capture SSE (Server-Sent Events) responses from Trip.com API
  */
 export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
-    if (request.label !== LABELS.OUT_BOUND) {
+    if (
+        request.label !== LABELS.DIRECT_OUTBOUND &&
+        request.label !== LABELS.ALT_LEG1_OUTBOUND &&
+        request.label !== LABELS.ALT_LEG2_OUTBOUND
+    ) {
         return;
     }
 
@@ -58,7 +62,11 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
 };
 
 export const captureResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
-    if (request.label !== LABELS.IN_BOUND) {
+    if (
+        request.label !== LABELS.DIRECT_INBOUND &&
+        request.label !== LABELS.ALT_LEG2_INBOUND &&
+        request.label !== LABELS.ALT_LEG1_INBOUND
+    ) {
         return;
     }
 
