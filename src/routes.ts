@@ -7,16 +7,16 @@ import { createInboundUrl } from './utils.js';
 export const router = createPlaywrightRouter();
 
 router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
-    let outboundData;
-    outboundData = request.userData.outboundData as FlightInfo[] | undefined;
+    let outboundFlightInfoList;
+    outboundFlightInfoList = request.userData.outboundFlightInfoList as FlightInfo[] | undefined;
 
-    if (!outboundData) {
+    if (!outboundFlightInfoList) {
         log.warning('No outbound flight data found in request.userData');
         await page.waitForTimeout(3000);
-        outboundData = request.userData.outboundData as FlightInfo[] | undefined;
+        outboundFlightInfoList = request.userData.outboundFlightInfoList as FlightInfo[] | undefined;
     }
 
-    if (!outboundData) {
+    if (!outboundFlightInfoList) {
         log.error('Outbound flight data is still missing after wait. Skipping dataset push.');
         return;
     }
@@ -24,7 +24,7 @@ router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
     if (request.userData.pattern === PATTERN.DIRECT_ROUTE) {
         const searchInfo = request.userData.searchInfo as DirectRouteSearchInfo;
 
-        for (const flightInfo of outboundData) {
+        for (const flightInfo of outboundFlightInfoList) {
             const inboundFlightSearchUrl = createInboundUrl({
                 departureCityCode: searchInfo.departureCityCode,
                 targetCityCode: searchInfo.targetCityCode,
