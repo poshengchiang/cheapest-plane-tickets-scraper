@@ -150,7 +150,7 @@ router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({ request, log, page, crawler 
             label: LABELS.ALT_LEG2_OUTBOUND,
             userData: {
                 searchInfo,
-                intermediateCityFlightInfo: combinedFlightInfo,
+                leg1FLightInfo: combinedFlightInfo,
             },
         },
     ]);
