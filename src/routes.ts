@@ -2,7 +2,7 @@ import { createPlaywrightRouter, Dataset } from 'crawlee';
 
 import { LABELS, PATTERN } from './constants.js';
 import type { DirectRouteSearchInfo, FlightInfo } from './types.js';
-import { createInboundUrl } from './utils.js';
+import { combineOutboundInboundFlightInfo, createInboundUrl } from './utils.js';
 
 export const router = createPlaywrightRouter();
 
@@ -67,8 +67,13 @@ router.addHandler(LABELS.IN_BOUND, async ({ request, log }) => {
         throw new Error('Missing inbound flight info');
     }
 
-    await Dataset.pushData({
-        url: request.loadedUrl,
-        title,
+    const combineFlightInfoDatasetPromises = inboundFlightInfoList.map(async (inboundFlightInfo) => {
+        const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
+        return await Dataset.pushData({
+            pattern,
+            flightInfo: combinedFlightInfo,
+        });
     });
+
+    await Promise.all(combineFlightInfoDatasetPromises);
 });

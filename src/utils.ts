@@ -141,3 +141,16 @@ export function extractFlightData(sseResponseData: FlightResponseData): FlightIn
         return null;
     }
 }
+
+export function combineOutboundInboundFlightInfo(outbound: FlightInfo, inbound: FlightInfo): FlightInfo {
+    return {
+        totalPrice: inbound.totalPrice,
+        totalTimeMinutes: inbound.totalTimeMinutes + outbound.totalTimeMinutes,
+        departureCity: outbound.departureCity,
+        targetCity: outbound.targetCity,
+        totalFlights: inbound.totalFlights + outbound.totalFlights,
+        productId: inbound.productId,
+        policyId: inbound.policyId,
+        flights: [...outbound.flights, ...inbound.flights],
+    };
+}
