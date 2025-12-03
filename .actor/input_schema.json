@@ -17,8 +17,8 @@
             "type": "string",
             "description": "Primary departure city/airport code",
             "editor": "select",
-            "enum": ["TPE", "PRG", "TYO"],
-            "enumTitles": ["Taipei (TPE)", "Prague (PRG)", "Tokyo (TYO)"],
+            "enum": ["TPE", "PRG", "TYO", "BKK"],
+            "enumTitles": ["Taipei (TPE)", "Prague (PRG)", "Tokyo (TYO)", "Bangkok (BKK)"],
             "default": "PRG"
         },
         "alternativeDepartureCities": {
