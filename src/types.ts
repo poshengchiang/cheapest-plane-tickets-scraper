@@ -65,8 +65,10 @@ export interface FlightSegment {
  * Individual flight leg information
  */
 export interface FlightLeg {
+    departureCityCode: string;
     departureAirport: string;
     departureTime: string; // ISO 8601 format
+    arrivalCityCode: string;
     arrivalAirport: string;
     arrivalTime: string; // ISO 8601 format
     flightSegment: FlightSegment;
@@ -76,8 +78,10 @@ export interface FlightLeg {
 export interface FlightInfo {
     totalPrice: number;
     totalTimeMinutes: number;
-    departureCity: string;
-    targetCity: string;
+    departureCityName: string;
+    departureCityCode: string;
+    targetCityName: string;
+    targetCityCode: string;
     totalFlights: number;
     productId: string;
     policyId: string;
@@ -99,6 +103,7 @@ export interface RouteResult {
 
 // Response data structures
 interface FlightPoint {
+    cityCode: string;
     cityName: string;
     airportCode: string;
 }
