@@ -1,6 +1,14 @@
 import { log } from 'apify';
 
-import type { FlightData, FlightInfo, FlightResponseData, FlightSection } from './types.js';
+import { LABELS, PATTERN } from './constants.js';
+import type {
+    AlternativeRouteRequest,
+    DirectRouteRequest,
+    FlightData,
+    FlightInfo,
+    FlightResponseData,
+    FlightSection,
+} from './types.js';
 
 export interface OutBoundParams {
     departureCityCode: string;
@@ -156,14 +164,16 @@ export function combineOutboundInboundFlightInfo(outbound: FlightInfo, inbound: 
     };
 }
 
-export function createDirectRouteRequest(
+export function createRouteRequest(
+    pattern: PATTERN,
     departureCityCode: string,
     targetCityCode: string,
     departureDate: string,
     returnDate: string,
     numberOfPeople: number,
     cabinClass: string,
-): DirectRouteRequest {
+    intermediateCityCode?: string,
+): DirectRouteRequest | AlternativeRouteRequest {
     const url = createOutBoundUrl({
         departureCityCode,
         targetCityCode,
@@ -172,19 +182,41 @@ export function createDirectRouteRequest(
         quantity: numberOfPeople,
     });
 
-    return {
-        url,
-        label: LABELS.OUT_BOUND,
-        userData: {
-            pattern: PATTERN.DIRECT_ROUTE,
-            searchInfo: {
-                departureCityCode,
-                targetCityCode,
-                departureDate,
-                returnDate,
-                cabinClass,
-                quantity: numberOfPeople,
+    if (pattern === PATTERN.DIRECT_ROUTE) {
+        return {
+            url,
+            label: LABELS.OUT_BOUND,
+            userData: {
+                pattern: PATTERN.DIRECT_ROUTE,
+                searchInfo: {
+                    departureCityCode,
+                    targetCityCode,
+                    departureDate,
+                    returnDate,
+                    cabinClass,
+                    quantity: numberOfPeople,
+                },
             },
-        },
-    };
+        };
+    }
+
+    if (pattern === PATTERN.ALTERNATIVE_ROUTE) {
+        return {
+            url,
+            label: LABELS.OUT_BOUND,
+            userData: {
+                pattern: PATTERN.ALTERNATIVE_ROUTE,
+                searchInfo: {
+                    departureCityCode,
+                    intermediateCityCode,
+                    targetCityCode,
+                    departureDate,
+                    returnDate,
+                    cabinClass,
+                    quantity: numberOfPeople,
+                },
+            },
+        };
+    }
+    throw new Error(`Unsupported pattern: ${pattern}`);
 }

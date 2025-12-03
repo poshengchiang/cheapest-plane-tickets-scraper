@@ -1,4 +1,4 @@
-import type { ALTERNATIVE_ROUTE_STEPS, PATTERN } from './constants.js';
+import type { ALTERNATIVE_ROUTE_STEPS, LABELS, PATTERN } from './constants.js';
 
 export interface TimePeriod {
     outboundDate: string; // YYYY-MM-DD format
@@ -32,9 +32,27 @@ export interface DirectRouteSearchInfo {
     quantity: number; // Number of passengers
 }
 
+export interface DirectRouteRequest {
+    url: string;
+    label: LABELS;
+    userData: {
+        pattern: PATTERN;
+        searchInfo: DirectRouteSearchInfo;
+    };
+}
+
 export interface AlternativeRouteSearchInfo extends DirectRouteSearchInfo {
     intermediateCityCode: string;
     step: ALTERNATIVE_ROUTE_STEPS;
+}
+
+export interface AlternativeRouteRequest {
+    url: string;
+    label: LABELS;
+    userData: {
+        pattern: PATTERN;
+        searchInfo: AlternativeRouteSearchInfo;
+    };
 }
 
 /**
