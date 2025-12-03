@@ -2,23 +2,16 @@ import { createPlaywrightRouter, Dataset } from 'crawlee';
 
 import { LABELS, PATTERN, TOP_FLIGHTS_TO_COLLECT_LIMIT } from './constants.js';
 import type { DirectRouteSearchInfo, FlightInfo } from './types.js';
-import { combineOutboundInboundFlightInfo, createInboundUrl } from './utils.js';
+import { combineOutboundInboundFlightInfo, createInboundUrl, waitForUserData } from './utils.js';
 
 export const router = createPlaywrightRouter();
 
 router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
-    let outboundFlightInfoList;
-    outboundFlightInfoList = request.userData.outboundFlightInfoList as FlightInfo[] | undefined;
+    const outboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'outboundFlightInfoList');
 
     if (!outboundFlightInfoList) {
-        log.warning('No outbound flight data found in request.userData');
-        await page.waitForTimeout(3000);
-        outboundFlightInfoList = request.userData.outboundFlightInfoList as FlightInfo[] | undefined;
-    }
-
-    if (!outboundFlightInfoList) {
-        log.error('Outbound flight data is still missing after wait. Skipping dataset push.');
-        throw new Error('Missing outbound flight data');
+        log.error('Outbound flight data is still missing after 30 seconds.');
+        throw new Error('Missing outbound flight data after 30 seconds of waiting');
     }
 
     if (request.userData.pattern === PATTERN.DIRECT_ROUTE) {
@@ -52,9 +45,15 @@ router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
     }
 });
 
-router.addHandler(LABELS.IN_BOUND, async ({ request, log }) => {
+router.addHandler(LABELS.IN_BOUND, async ({ request, page, log }) => {
+    const inboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'inboundFlightInfoList');
+
+    if (!inboundFlightInfoList) {
+        log.error('Inbound flight data is still missing after 30 seconds.');
+        throw new Error('Missing inbound flight data after 30 seconds of waiting');
+    }
+
     const outboundFlightInfo = request.userData.outboundFlightInfo as FlightInfo;
-    const inboundFlightInfoList = request.userData.inboundFlightInfoList as FlightInfo[] | undefined;
 
     const pattern = request.userData.pattern as string;
 
