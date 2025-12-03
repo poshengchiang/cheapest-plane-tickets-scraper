@@ -42,7 +42,7 @@
             "default": [],
             "prefill": ["HKG", "ICN"]
         },
-        "class": {
+        "cabinClass": {
             "title": "Cabin Class",
             "type": "string",
             "description": "Flight cabin class",
