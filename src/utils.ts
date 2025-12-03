@@ -1,6 +1,6 @@
 import { log } from 'apify';
 
-import type { FlightInfo } from './types.js';
+import type { FlightData, FlightInfo, FlightResponseData, FlightSection } from './types.js';
 
 export interface OutBoundParams {
     departureCityCode: string;
@@ -89,7 +89,7 @@ export function createInboundUrl(params: InBoundParams): string {
     return `${baseUrl}?${searchParams.toString()}`;
 }
 
-export function extractFlightData(sseResponseData: any): FlightInfo[] | null {
+export function extractFlightData(sseResponseData: FlightResponseData): FlightInfo[] | null {
     try {
         const { recordCount } = sseResponseData.basicInfo;
         if (recordCount <= 1) {
@@ -99,7 +99,7 @@ export function extractFlightData(sseResponseData: any): FlightInfo[] | null {
         const flightsData = sseResponseData.itineraryList || [];
         const { productId } = sseResponseData.basicInfo;
 
-        const flightInfos: FlightInfo[] = flightsData.map((flightData: any) => {
+        const flightInfos: FlightInfo[] = flightsData.map((flightData: FlightData) => {
             const { totalPrice } = flightData.policies[0].price;
             const totalFlights = flightData.journeyList[0].transSectionList.length;
             const totalTimeMinutes = flightData.journeyList[0].duration;
@@ -109,7 +109,7 @@ export function extractFlightData(sseResponseData: any): FlightInfo[] | null {
 
             const { policyId } = flightData.policies[0];
 
-            const flights = flightData.journeyList[0].transSectionList.map((flightSection: any) => {
+            const flights = flightData.journeyList[0].transSectionList.map((flightSection: FlightSection) => {
                 return {
                     departureAirport: flightSection.departPoint.airportCode,
                     departureTime: flightSection.departDateTime,
