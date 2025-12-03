@@ -1,15 +1,19 @@
-import { log } from 'apify';
+import { Dataset, log } from 'apify';
 import type { PlaywrightHook } from 'crawlee';
 
-import { extractOutboundFlightData } from './utils.js';
+import { LABELS } from './constants.js';
+import { extractFlightData } from './utils.js';
 
 /**
  * Pre-navigation hook to capture SSE (Server-Sent Events) responses from Trip.com API
  */
 export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) => {
-    // Set up response listener BEFORE navigation
+    if (request.label !== LABELS.OUT_BOUND) {
+        return;
+    }
+
     page.on('response', async (response) => {
-        if (response.url().includes('FlightListSearchSSE') && response.status() === 200) {
+        if (response.url().endsWith('FlightListSearchSSE') && response.status() === 200) {
             log.info(`Capturing SSE response from: ${response.url()}`);
             try {
                 const text = await response.text();
@@ -35,7 +39,7 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) 
                     }
                 }
 
-                const extractedFlightsData = extractOutboundFlightData(responseData);
+                const extractedFlightsData = extractFlightData(responseData);
                 if (extractedFlightsData) {
                     // Store in userData so requestHandler can access it
                     log.info('Captured SSE response');
@@ -45,6 +49,37 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) 
                 }
             } catch (error) {
                 log.error('Failed to parse SSE response', { error });
+            }
+        }
+    });
+};
+
+export const captureResponseHook: PlaywrightHook = async ({ page, request }) => {
+    if (request.label !== LABELS.IN_BOUND) {
+        return;
+    }
+
+    page.on('response', async (response) => {
+        if (response.url().endsWith('FlightListSearch') && response.status() === 200) {
+            log.info(`Capturing response from: ${response.url()}`);
+            try {
+                const text = await response.text();
+                log.info(`Preview of response text: ${text.slice(0, 300)}`);
+
+                const json = await response.json();
+                await Dataset.pushData({ json });
+                log.info('Pushed raw response JSON to dataset for debugging');
+
+                const extractedFlightsData = extractFlightData(json);
+                if (extractedFlightsData) {
+                    // Store in userData so requestHandler can access it
+                    log.info('Captured flight search response');
+                    request.userData.inboundFlightInfoList = extractedFlightsData;
+                } else {
+                    log.warning('No flight data extracted from flight search response');
+                }
+            } catch (error) {
+                log.error('Failed to parse flight search response', { error });
             }
         }
     });

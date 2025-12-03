@@ -89,7 +89,7 @@ export function createInboundUrl(params: InBoundParams): string {
     return `${baseUrl}?${searchParams.toString()}`;
 }
 
-export function extractOutboundFlightData(sseResponseData: any): FlightInfo[] | null {
+export function extractFlightData(sseResponseData: any): FlightInfo[] | null {
     try {
         const { recordCount } = sseResponseData.basicInfo;
         if (recordCount <= 1) {
