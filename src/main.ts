@@ -76,5 +76,18 @@ const startUrls = [{ url: 'https://tw.trip.com/', label: LABELS.START, userData:
 
 await crawler.run(startUrls);
 
+const dataset = await Actor.openDataset();
+const { items } = await dataset.getData();
+log.info(`Crawler finished. Total items saved to dataset: ${items.length}`);
+
+const sortedItems = items.sort((a, b) => {
+    return a.flightInfo.totalPrice - b.flightInfo.totalPrice;
+});
+
+await dataset.drop();
+
+const sortedDataset = await Actor.openDataset();
+await sortedDataset.pushData(sortedItems);
+
 // Exit successfully
 await Actor.exit();
