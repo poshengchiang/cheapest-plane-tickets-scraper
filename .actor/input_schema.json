@@ -47,8 +47,9 @@
             "type": "string",
             "description": "Flight cabin class",
             "editor": "select",
-            "enum": ["Economy", "Business", "First"],
-            "default": "Economy"
+            "enum": ["Y", "C", "F"],
+            "enumTitles": ["Economic", "Business", "First"],
+            "default": "Y"
         },
         "numberOfPeople": {
             "title": "Number of Passengers",
