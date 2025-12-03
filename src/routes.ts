@@ -18,7 +18,7 @@ router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
 
     if (!outboundFlightInfoList) {
         log.error('Outbound flight data is still missing after wait. Skipping dataset push.');
-        return;
+        throw new Error('Missing outbound flight data');
     }
 
     if (request.userData.pattern === PATTERN.DIRECT_ROUTE) {
