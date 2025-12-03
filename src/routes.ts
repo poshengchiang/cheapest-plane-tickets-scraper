@@ -51,9 +51,21 @@ router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
     }
 });
 
-router.addHandler(LABELS.IN_BOUND, async ({ request, page, log }) => {
-    const title = await page.title();
-    log.info(`${title}`, { url: request.loadedUrl });
+router.addHandler(LABELS.IN_BOUND, async ({ request, log }) => {
+    const outboundFlightInfo = request.userData.outboundFlightInfo as FlightInfo;
+    const inboundFlightInfoList = request.userData.inboundFlightInfoList as FlightInfo[] | undefined;
+
+    const pattern = request.userData.pattern as string;
+
+    if (!outboundFlightInfo) {
+        log.error('No outbound flight info found in request.userData');
+        throw new Error('Missing outbound flight info');
+    }
+
+    if (!inboundFlightInfoList) {
+        log.error('Inbound flight info is not found in request.userData.');
+        throw new Error('Missing inbound flight info');
+    }
 
     await Dataset.pushData({
         url: request.loadedUrl,
