@@ -6,16 +6,20 @@
         "mainDepartureCity": {
             "title": "Main Departure City (MDC)",
             "type": "string",
-            "description": "Primary departure city/airport code (e.g., TPE for Taipei)",
-            "editor": "textfield",
-            "example": "TPE"
+            "description": "Primary departure city/airport code",
+            "editor": "select",
+            "enum": ["TPE", "PRG", "TYO"],
+            "enumTitles": ["Taipei (TPE)", "Prague (PRG)", "Tokyo (TYO)"],
+            "default": "TPE"
         },
         "targetCity": {
             "title": "Target City (TC)",
             "type": "string",
-            "description": "Final destination city/airport code (e.g., NRT for Tokyo)",
-            "editor": "textfield",
-            "example": "NRT"
+            "description": "Primary departure city/airport code",
+            "editor": "select",
+            "enum": ["TPE", "PRG", "TYO"],
+            "enumTitles": ["Taipei (TPE)", "Prague (PRG)", "Tokyo (TYO)"],
+            "default": "PRG"
         },
         "alternativeDepartureCities": {
             "title": "Alternative Departure Cities (ADC)",
