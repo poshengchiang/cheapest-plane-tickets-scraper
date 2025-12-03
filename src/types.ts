@@ -76,3 +76,43 @@ export interface RouteResult {
         inboundDate: string; // Actual selected date
     };
 }
+
+/**
+ * Flights http response structure
+ */
+
+// Response data structures
+interface FlightPoint {
+    cityName: string;
+    airportCode: string;
+}
+
+export interface FlightSection {
+    departPoint: FlightPoint;
+    arrivePoint: FlightPoint;
+    departDateTime: string;
+    arriveDateTime: string;
+    flightInfo: {
+        airlineCode: string;
+        flightNo: string;
+    };
+    duration: number;
+}
+
+export interface FlightData {
+    journeyList: {
+        transSectionList: FlightSection[];
+        duration: number;
+    }[];
+    policies: {
+        price: {
+            totalPrice: number;
+        };
+        policyId: string;
+    }[];
+}
+
+export interface FlightResponseData {
+    basicInfo: { recordCount: number; productId: string };
+    itineraryList: FlightData[];
+}
