@@ -67,9 +67,6 @@ export const captureResponseHook: PlaywrightHook = async ({ page, request }) => 
                 log.info(`Preview of response text: ${text.slice(0, 300)}`);
 
                 const json = await response.json();
-                await Dataset.pushData({ json });
-                log.info('Pushed raw response JSON to dataset for debugging');
-
                 const extractedFlightsData = extractFlightData(json);
                 if (extractedFlightsData) {
                     // Store in userData so requestHandler can access it
