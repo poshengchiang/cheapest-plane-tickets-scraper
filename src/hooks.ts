@@ -7,10 +7,13 @@ import { extractFlightData } from './utils.js';
 /**
  * Pre-navigation hook to capture SSE (Server-Sent Events) responses from Trip.com API
  */
-export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) => {
+export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
     if (request.label !== LABELS.OUT_BOUND) {
         return;
     }
+
+    // eslint-disable-next-line no-param-reassign
+    gotoOptions.waitUntil = 'domcontentloaded';
 
     page.on('response', async (response) => {
         if (response.url().endsWith('FlightListSearchSSE') && response.status() === 200) {
@@ -54,10 +57,13 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }) 
     });
 };
 
-export const captureResponseHook: PlaywrightHook = async ({ page, request }) => {
+export const captureResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
     if (request.label !== LABELS.IN_BOUND) {
         return;
     }
+
+    // eslint-disable-next-line no-param-reassign
+    gotoOptions.waitUntil = 'domcontentloaded';
 
     page.on('response', async (response) => {
         if (response.url().endsWith('FlightListSearch') && response.status() === 200) {
