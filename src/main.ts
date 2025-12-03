@@ -12,11 +12,10 @@ import { PlaywrightCrawler } from 'crawlee';
 // this is ESM project, and as such, it requires you to specify extensions in your relative imports
 // read more about this here: https://nodejs.org/docs/latest-v18.x/api/esm.html#mandatory-file-extensions
 // note that we need to use `.js` even when inside TS files
-import { LABELS, PATTERN } from './constants.js';
 import { captureResponseHook, captureSSEResponseHook } from './hooks.js';
 import { router } from './routes.js';
-import type { Input } from './types.js';
-import { createOutBoundUrl } from './utils.js';
+import type { DirectRouteRequest, Input } from './types.js';
+import { createDirectRouteRequest } from './utils.js';
 
 // Initialize the Apify SDK
 await Actor.init();
@@ -34,7 +33,7 @@ const {
     mainDepartureCity,
     targetCity,
     alternativeDepartureCities = [],
-    cabinClass = 'Economy',
+    cabinClass,
     numberOfPeople = 1,
     timePeriods,
     airlines = [],

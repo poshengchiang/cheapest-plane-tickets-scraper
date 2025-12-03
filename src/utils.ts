@@ -155,3 +155,36 @@ export function combineOutboundInboundFlightInfo(outbound: FlightInfo, inbound: 
         flights: [...outbound.flights, ...inbound.flights],
     };
 }
+
+export function createDirectRouteRequest(
+    departureCityCode: string,
+    targetCityCode: string,
+    departureDate: string,
+    returnDate: string,
+    numberOfPeople: number,
+    cabinClass: string,
+): DirectRouteRequest {
+    const url = createOutBoundUrl({
+        departureCityCode,
+        targetCityCode,
+        departureDate,
+        returnDate,
+        quantity: numberOfPeople,
+    });
+
+    return {
+        url,
+        label: LABELS.OUT_BOUND,
+        userData: {
+            pattern: PATTERN.DIRECT_ROUTE,
+            searchInfo: {
+                departureCityCode,
+                targetCityCode,
+                departureDate,
+                returnDate,
+                cabinClass,
+                quantity: numberOfPeople,
+            },
+        },
+    };
+}
