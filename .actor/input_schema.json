@@ -62,44 +62,30 @@
         "timePeriods": {
             "title": "Travel Time Periods",
             "type": "array",
-            "description": "Date ranges for travel. Each period defines outbound and inbound date ranges.",
+            "description": "Dates for travel. Each period defines outbound and inbound dates.",
             "editor": "json",
             "items": {
                 "type": "object",
                 "properties": {
-                    "outboundDateStart": {
+                    "outboundDate": {
                         "title": "Outbound Start Date",
                         "type": "string",
                         "description": "Start date for outbound flight search (YYYY-MM-DD)",
                         "editor": "textfield"
                     },
-                    "outboundDateEnd": {
+                    "inboundDate": {
                         "title": "Outbound End Date",
                         "type": "string",
                         "description": "End date for outbound flight search (YYYY-MM-DD)",
                         "editor": "textfield"
-                    },
-                    "inboundDateStart": {
-                        "title": "Inbound Start Date",
-                        "type": "string",
-                        "description": "Start date for inbound flight search (YYYY-MM-DD)",
-                        "editor": "textfield"
-                    },
-                    "inboundDateEnd": {
-                        "title": "Inbound End Date",
-                        "type": "string",
-                        "description": "End date for inbound flight search (YYYY-MM-DD)",
-                        "editor": "textfield"
                     }
                 },
-                "required": ["outboundDateStart", "outboundDateEnd", "inboundDateStart", "inboundDateEnd"]
+                "required": ["outboundDate", "inboundDate"]
             },
             "prefill": [
                 {
-                    "outboundDateStart": "2025-12-10",
-                    "outboundDateEnd": "2025-12-12",
-                    "inboundDateStart": "2025-12-17",
-                    "inboundDateEnd": "2025-12-19"
+                    "outboundDate": "2025-12-10",
+                    "inboundDate": "2025-12-17"
                 }
             ]
         },
@@ -112,28 +98,6 @@
                 "type": "string"
             },
             "default": []
-        },
-        "targetLowestPrice": {
-            "title": "Sort by Lowest Price",
-            "type": "boolean",
-            "description": "Whether to sort results by price (lowest first)",
-            "default": true
-        },
-        "transferTimeHours": {
-            "title": "Minimum Transfer Time (Hours)",
-            "type": "integer",
-            "description": "Minimum hours required between connecting flights for alternative routes",
-            "minimum": 1,
-            "maximum": 48,
-            "default": 3
-        },
-        "adcBufferHours": {
-            "title": "ADC Search Buffer (Hours)",
-            "type": "integer",
-            "description": "Hours buffer for ADC↔TC leg searches (search ±N hours from MDC arrival/departure)",
-            "minimum": 12,
-            "maximum": 72,
-            "default": 24
         },
         "maxRequestsPerCrawl": {
             "title": "Max Requests per Crawl",
