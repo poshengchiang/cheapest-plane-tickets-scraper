@@ -108,5 +108,5 @@
             "default": 1000
         }
     },
-    "required": ["mainDepartureCity", "targetCity", "class", "numberOfPeople", "timePeriods"]
+    "required": ["mainDepartureCity", "targetCity", "cabinClass", "numberOfPeople", "timePeriods"]
 }
