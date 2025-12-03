@@ -13,7 +13,7 @@ import { PlaywrightCrawler } from 'crawlee';
 // read more about this here: https://nodejs.org/docs/latest-v18.x/api/esm.html#mandatory-file-extensions
 // note that we need to use `.js` even when inside TS files
 import { LABELS, PATTERN } from './constants.js';
-import { captureSSEResponseHook } from './hooks.js';
+import { captureResponseHook, captureSSEResponseHook } from './hooks.js';
 import { router } from './routes.js';
 import type { Input } from './types.js';
 import { createOutBoundUrl } from './utils.js';
@@ -62,7 +62,7 @@ const crawler = new PlaywrightCrawler({
     headless: true,
     requestHandler: router,
     navigationTimeoutSecs: 60, // Increased for SSE responses that take longer
-    preNavigationHooks: [captureSSEResponseHook],
+    preNavigationHooks: [captureSSEResponseHook, captureResponseHook],
     launchContext: {
         launchOptions: {
             args: [
