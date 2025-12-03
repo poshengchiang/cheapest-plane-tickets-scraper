@@ -1,6 +1,6 @@
 import { createPlaywrightRouter, Dataset } from 'crawlee';
 
-import { LABELS, PATTERN } from './constants.js';
+import { LABELS, PATTERN, TOP_FLIGHTS_TO_COLLECT_LIMIT } from './constants.js';
 import type { DirectRouteSearchInfo, FlightInfo } from './types.js';
 import { combineOutboundInboundFlightInfo, createInboundUrl } from './utils.js';
 
@@ -23,8 +23,9 @@ router.addHandler(LABELS.OUT_BOUND, async ({ request, log, page, crawler }) => {
 
     if (request.userData.pattern === PATTERN.DIRECT_ROUTE) {
         const searchInfo = request.userData.searchInfo as DirectRouteSearchInfo;
+        const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
-        for (const flightInfo of outboundFlightInfoList) {
+        for (const flightInfo of topFlightInfos) {
             const inboundFlightSearchUrl = createInboundUrl({
                 departureCityCode: searchInfo.departureCityCode,
                 targetCityCode: searchInfo.targetCityCode,
@@ -67,7 +68,9 @@ router.addHandler(LABELS.IN_BOUND, async ({ request, log }) => {
         throw new Error('Missing inbound flight info');
     }
 
-    const combineFlightInfoDatasetPromises = inboundFlightInfoList.map(async (inboundFlightInfo) => {
+    const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
+
+    const combineFlightInfoDatasetPromises = topFlightInfos.map(async (inboundFlightInfo) => {
         const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
         return await Dataset.pushData({
             pattern,
