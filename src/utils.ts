@@ -129,15 +129,15 @@ export function createInboundUrl(params: InBoundParams): string {
     return `${baseUrl}?${searchParams.toString()}`;
 }
 
-export function extractFlightData(sseResponseData: FlightResponseData): FlightInfo[] | null {
+export function extractFlightData(ResponseData: FlightResponseData): FlightInfo[] | null {
     try {
-        const { recordCount } = sseResponseData.basicInfo;
+        const { recordCount } = ResponseData.basicInfo;
         if (recordCount <= 1) {
             log.warning('No outbound flights found in SSE response', { recordCount });
         }
 
-        const flightsData = sseResponseData.itineraryList || [];
-        const { productId } = sseResponseData.basicInfo;
+        const flightsData = ResponseData.itineraryList || [];
+        const { productId } = ResponseData.basicInfo;
 
         const flightInfos: FlightInfo[] = flightsData.map((flightData: FlightData) => {
             const { totalPrice } = flightData.policies[0].price;
@@ -177,7 +177,7 @@ export function extractFlightData(sseResponseData: FlightResponseData): FlightIn
 
         return flightInfos;
     } catch (error) {
-        log.error('Failed to extract flight data', { error, sseResponseData });
+        log.error('Failed to extract flight data', { error, ResponseData });
         return null;
     }
 }
