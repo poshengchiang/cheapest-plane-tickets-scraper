@@ -32,7 +32,7 @@ router.addHandler(LABELS.DIRECT_OUTBOUND, async ({ request, log, page, crawler }
         await crawler.addRequests([
             {
                 url: inboundFlightSearchUrl,
-                label: LABELS.DIRECT_OUTBOUND,
+                label: LABELS.DIRECT_INBOUND,
                 userData: {
                     outboundFlightInfo: flightInfo,
                     searchInfo,
