@@ -198,7 +198,7 @@ export function createRequest(params: CreateRequestParams) {
     }
 
     if ('leg1FlightInfo' in params) {
-        userData.leg1FLightInfo = params.leg1FlightInfo;
+        userData.leg1FlightInfo = params.leg1FlightInfo;
     }
 
     return { url, label, userData };

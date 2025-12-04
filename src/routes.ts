@@ -82,7 +82,7 @@ router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({ request, page, crawler }) =
     const outboundFlightInfoList = await getAndValidateFlightData(request, page, 'outboundFlightInfoList');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
     const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
-    const leg1FlightInfo = validateUserData<FlightInfo>(request.userData.leg1FLightInfo, 'leg1FLightInfo');
+    const leg1FlightInfo = validateUserData<FlightInfo>(request.userData.leg1FlightInfo, 'leg1FlightInfo');
 
     const requests = topFlightInfos.map((flightInfo) =>
         createRequest({
@@ -99,7 +99,7 @@ router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({ request, page, crawler }) =
 router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page }) => {
     const inboundFlightInfoList = await getAndValidateFlightData(request, page, 'inboundFlightInfoList');
     const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
-    const leg1FLightInfo = validateUserData<FlightInfo>(request.userData.leg1FLightInfo, 'leg1FLightInfo');
+    const leg1FlightInfo = validateUserData<FlightInfo>(request.userData.leg1FlightInfo, 'leg1FlightInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
     const combineFlightInfoList = topFlightInfos.map((inboundFlightInfo: FlightInfo) =>
@@ -107,7 +107,7 @@ router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page }) => {
     );
 
     const resultPromises = combineFlightInfoList.map(async (combinedFlightInfo: FlightInfo) => {
-        const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FLightInfo, combinedFlightInfo);
+        const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
         return await Dataset.pushData({
             pattern: PATTERN.ALTERNATIVE_ROUTE,
             flightInfo: finalCombinedFlightInfo,
