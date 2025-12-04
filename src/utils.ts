@@ -30,7 +30,6 @@ export async function waitForUserData<T>(
     let data = request.userData[userDataKey] as T | undefined;
 
     if (!data) {
-        log.warning(`No ${userDataKey} found in request.userData, waiting...`);
         const maxAttempts = maxWaitTime / checkInterval;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -41,8 +40,6 @@ export async function waitForUserData<T>(
                 log.info(`${userDataKey} found after ${(attempt * checkInterval) / 1000} seconds`);
                 return data;
             }
-
-            log.warning(`Attempt ${attempt}/${maxAttempts}: Still waiting for ${userDataKey}...`);
         }
     }
 

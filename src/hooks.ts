@@ -21,10 +21,8 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
 
     page.on('response', async (response) => {
         if (response.url().endsWith('FlightListSearchSSE') && response.status() === 200) {
-            log.info(`Capturing SSE response from: ${response.url()}`);
             try {
                 const text = await response.text();
-                log.info(`SSE response text length: ${text.length}`);
 
                 // Parse SSE events
                 const lines = text.split('\n');
@@ -32,8 +30,6 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
                 let responseData = null;
 
                 for (const line of lines) {
-                    log.info(`SSE response line preview: ${line.slice(0, 300)}`);
-
                     if (line.startsWith('data:')) {
                         const data = line.slice(5).trim(); // Remove 'data:' prefix and trim
                         if (data) {
@@ -49,7 +45,6 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
                 const extractedFlightsData = extractFlightData(responseData);
                 if (extractedFlightsData) {
                     // Store in userData so requestHandler can access it
-                    log.info('Captured SSE response');
                     request.userData.outboundFlightInfoList = extractedFlightsData;
                 } else {
                     log.warning('No flight data extracted from SSE response');
