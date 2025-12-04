@@ -3,20 +3,75 @@
     "fields": {},
     "views": {
         "overview": {
-            "title": "Overview",
+            "title": "Flight Results",
             "transformation": {
-                "fields": ["title", "url"]
+                "fields": [
+                    "pattern",
+                    "flightInfo.totalPrice",
+                    "flightInfo.departureCityName",
+                    "flightInfo.targetCityName",
+                    "intermediateCityName",
+                    "flightInfo.totalTimeMinutes",
+                    "flightInfo.totalFlights"
+                ]
             },
             "display": {
                 "component": "table",
                 "properties": {
-                    "title": {
-                        "label": "Title",
+                    "pattern": {
+                        "label": "Route Type",
                         "format": "text"
                     },
-                    "url": {
-                        "label": "URL",
-                        "format": "link"
+                    "flightInfo.totalPrice": {
+                        "label": "Total Price (TWD)",
+                        "format": "number"
+                    },
+                    "flightInfo.departureCityName": {
+                        "label": "From",
+                        "format": "text"
+                    },
+                    "flightInfo.targetCityName": {
+                        "label": "To",
+                        "format": "text"
+                    },
+                    "intermediateCityName": {
+                        "label": "Via (Intermediate)",
+                        "format": "text"
+                    },
+                    "flightInfo.totalTimeMinutes": {
+                        "label": "Total Time (min)",
+                        "format": "number"
+                    },
+                    "flightInfo.totalFlights": {
+                        "label": "# of Flights",
+                        "format": "number"
+                    }
+                }
+            }
+        },
+        "detailed": {
+            "title": "Detailed Flight Info",
+            "transformation": {
+                "fields": ["pattern", "intermediateCityCode", "intermediateCityName", "flightInfo"]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "pattern": {
+                        "label": "Route Type",
+                        "format": "text"
+                    },
+                    "intermediateCityCode": {
+                        "label": "Intermediate City Code",
+                        "format": "text"
+                    },
+                    "intermediateCityName": {
+                        "label": "Intermediate City Name",
+                        "format": "text"
+                    },
+                    "flightInfo": {
+                        "label": "Flight Details",
+                        "format": "object"
                     }
                 }
             }

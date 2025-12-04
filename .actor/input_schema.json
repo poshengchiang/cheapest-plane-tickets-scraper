@@ -68,15 +68,15 @@
                 "type": "object",
                 "properties": {
                     "outboundDate": {
-                        "title": "Outbound Start Date",
+                        "title": "Outbound Date",
                         "type": "string",
-                        "description": "Start date for outbound flight search (YYYY-MM-DD)",
+                        "description": "Date for outbound flight search (YYYY-MM-DD)",
                         "editor": "textfield"
                     },
                     "inboundDate": {
-                        "title": "Outbound End Date",
+                        "title": "Outbound Date",
                         "type": "string",
-                        "description": "End date for outbound flight search (YYYY-MM-DD)",
+                        "description": "Date for outbound flight search (YYYY-MM-DD)",
                         "editor": "textfield"
                     }
                 },

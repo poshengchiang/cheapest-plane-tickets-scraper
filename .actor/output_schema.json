@@ -1,11 +1,21 @@
 {
     "actorOutputSchemaVersion": 1,
-    "title": "Output schema",
+    "title": "Cheapest Plane Tickets Output",
     "properties": {
-        "overview": {
+        "flightResults": {
             "type": "string",
-            "title": "Overview",
+            "title": "Flight Results (Overview)",
             "template": "{{links.apiDefaultDatasetUrl}}/items?view=overview"
+        },
+        "detailedResults": {
+            "type": "string",
+            "title": "Detailed Flight Info",
+            "template": "{{links.apiDefaultDatasetUrl}}/items?view=detailed"
+        },
+        "allData": {
+            "type": "string",
+            "title": "Complete Dataset (JSON)",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
         }
     }
 }
