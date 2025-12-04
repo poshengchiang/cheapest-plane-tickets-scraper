@@ -12,10 +12,11 @@ import { PlaywrightCrawler } from 'crawlee';
 // this is ESM project, and as such, it requires you to specify extensions in your relative imports
 // read more about this here: https://nodejs.org/docs/latest-v18.x/api/esm.html#mandatory-file-extensions
 // note that we need to use `.js` even when inside TS files
+import { LABELS } from './constants.js';
 import { captureResponseHook, captureSSEResponseHook } from './hooks.js';
 import { router } from './routes.js';
-import type { DirectRouteRequest, Input } from './types.js';
-import { createAlternativeRouteRequest, createDirectRouteRequest } from './utils.js';
+import type { Input } from './types.js';
+import { createRequest } from './utils.js';
 
 // Initialize the Apify SDK
 await Actor.init();
@@ -72,39 +73,45 @@ const crawler = new PlaywrightCrawler({
     },
 });
 
-const startUrls: DirectRouteRequest[] = [];
+const startUrls: ReturnType<typeof createRequest>[] = [];
 
 timePeriods.forEach((period) => {
     const { outboundDate, inboundDate } = period;
 
     // Create direct route request
-    const directRouteRequest = createDirectRouteRequest({
-        mainDepartureCity,
-        targetCity,
-        outboundDate,
-        inboundDate,
-        numberOfPeople,
-        cabinClass,
-        airlines,
-    });
-    startUrls.push(directRouteRequest);
+    startUrls.push(
+        createRequest({
+            label: LABELS.DIRECT_OUTBOUND,
+            searchInfo: {
+                departureCityCode: mainDepartureCity,
+                targetCityCode: targetCity,
+                departureDate: outboundDate,
+                returnDate: inboundDate,
+                cabinClass,
+                quantity: numberOfPeople,
+                airlines,
+            },
+        }),
+    );
 
     // Create alternative route requests
-    if (alternativeDepartureCities.length > 0) {
-        alternativeDepartureCities.forEach((intermediateCity) => {
-            const altRouteRequest = createAlternativeRouteRequest({
-                mainDepartureCity,
-                intermediateCity,
-                targetCity,
-                outboundDate,
-                inboundDate,
-                numberOfPeople,
-                cabinClass,
-                airlines,
-            });
-            startUrls.push(altRouteRequest);
-        });
-    }
+    alternativeDepartureCities.forEach((intermediateCity: string) => {
+        startUrls.push(
+            createRequest({
+                label: LABELS.ALT_LEG1_OUTBOUND,
+                searchInfo: {
+                    departureCityCode: mainDepartureCity,
+                    intermediateCityCode: intermediateCity,
+                    targetCityCode: targetCity,
+                    departureDate: outboundDate,
+                    returnDate: inboundDate,
+                    cabinClass,
+                    quantity: numberOfPeople,
+                    airlines,
+                },
+            }),
+        );
+    });
 });
 
 await crawler.run(startUrls);

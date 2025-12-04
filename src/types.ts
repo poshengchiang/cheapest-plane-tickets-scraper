@@ -1,4 +1,4 @@
-import type { ALTERNATIVE_ROUTE_STEPS, LABELS, PATTERN } from './constants.js';
+import type { LABELS, PATTERN } from './constants.js';
 
 export interface TimePeriod {
     outboundDate: string; // YYYY-MM-DD format
@@ -43,14 +43,6 @@ export interface DirectRouteRequest {
 
 export interface AlternativeRouteSearchInfo extends DirectRouteSearchInfo {
     intermediateCityCode: string;
-}
-
-export interface AlternativeRouteRequest {
-    url: string;
-    label: LABELS;
-    userData: {
-        searchInfo: AlternativeRouteSearchInfo;
-    };
 }
 
 /**

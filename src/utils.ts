@@ -3,8 +3,8 @@ import type { PlaywrightCrawlingContext } from 'crawlee';
 
 import { LABELS } from './constants.js';
 import type {
-    AlternativeRouteRequest,
-    DirectRouteRequest,
+    AlternativeRouteSearchInfo,
+    DirectRouteSearchInfo,
     FlightData,
     FlightInfo,
     FlightResponseData,
@@ -50,81 +50,128 @@ export async function waitForUserData<T>(
 }
 
 /**
- * Create a direct route request
+ * Unified parameters for creating any request (initial or continuation)
  */
-export function createDirectRouteRequest(params: {
-    mainDepartureCity: string;
-    targetCity: string;
-    outboundDate: string;
-    inboundDate: string;
-    numberOfPeople: number;
-    cabinClass: string;
-    airlines?: string[];
-}): DirectRouteRequest {
-    const url = createOutBoundUrl({
-        departureCityCode: params.mainDepartureCity,
-        targetCityCode: params.targetCity,
-        departureDate: params.outboundDate,
-        returnDate: params.inboundDate,
-        quantity: params.numberOfPeople,
-        airlines: params.airlines,
-    });
+export interface CreateRequestParams {
+    // Required for all requests
+    label: (typeof LABELS)[keyof typeof LABELS];
+    searchInfo: DirectRouteSearchInfo | AlternativeRouteSearchInfo;
 
-    return {
-        url,
-        label: LABELS.DIRECT_OUTBOUND,
-        userData: {
-            searchInfo: {
-                departureCityCode: params.mainDepartureCity,
-                targetCityCode: params.targetCity,
-                departureDate: params.outboundDate,
-                returnDate: params.inboundDate,
-                cabinClass: params.cabinClass,
-                quantity: params.numberOfPeople,
-                ...(params.airlines && { airlines: params.airlines }),
-            },
-        },
-    };
+    // Optional: for continuation requests (outbound -> inbound)
+    outboundFlightInfo?: FlightInfo;
+
+    // Optional: for alternative route leg2
+    leg1FlightInfo?: FlightInfo;
 }
 
 /**
- * Create an alternative route request
+ * Universal factory function to create any route request
+ * Determines URL and userData structure based on label
  */
-export function createAlternativeRouteRequest(params: {
-    mainDepartureCity: string;
-    intermediateCity: string;
-    targetCity: string;
-    outboundDate: string;
-    inboundDate: string;
-    numberOfPeople: number;
-    cabinClass: string;
-    airlines?: string[];
-}): AlternativeRouteRequest {
-    const url = createOutBoundUrl({
-        departureCityCode: params.mainDepartureCity,
-        targetCityCode: params.intermediateCity,
-        departureDate: params.outboundDate,
-        returnDate: params.inboundDate,
-        quantity: params.numberOfPeople,
-        airlines: params.airlines,
-    });
+export function createRequest(params: CreateRequestParams) {
+    const { label, searchInfo, outboundFlightInfo, leg1FlightInfo } = params;
 
-    return {
-        url,
-        label: LABELS.ALT_LEG1_OUTBOUND,
-        userData: {
-            searchInfo: {
-                departureCityCode: params.mainDepartureCity,
-                intermediateCityCode: params.intermediateCity,
-                targetCityCode: params.targetCity,
-                departureDate: params.outboundDate,
-                returnDate: params.inboundDate,
-                cabinClass: params.cabinClass,
-                quantity: params.numberOfPeople,
-                ...(params.airlines && { airlines: params.airlines }),
-            },
-        },
-    };
+    // Determine which cities and whether we need productId/policyId
+    let departureCityCode: string;
+    let targetCityCode: string;
+    let productId: string | undefined;
+    let policyId: string | undefined;
+
+    switch (label) {
+        case LABELS.DIRECT_OUTBOUND:
+            // TPE -> PRG (outbound)
+            departureCityCode = searchInfo.departureCityCode;
+            targetCityCode = searchInfo.targetCityCode;
+            break;
+
+        case LABELS.DIRECT_INBOUND:
+            // PRG -> TPE (inbound, needs flight from outbound)
+            departureCityCode = searchInfo.departureCityCode;
+            targetCityCode = searchInfo.targetCityCode;
+            productId = outboundFlightInfo?.productId;
+            policyId = outboundFlightInfo?.policyId;
+            break;
+
+        case LABELS.ALT_LEG1_OUTBOUND:
+            // TPE -> HKG (leg1 outbound to intermediate)
+            if (!('intermediateCityCode' in searchInfo)) {
+                throw new Error('intermediateCityCode required for ALT_LEG1_OUTBOUND');
+            }
+            departureCityCode = searchInfo.departureCityCode;
+            targetCityCode = searchInfo.intermediateCityCode;
+            break;
+
+        case LABELS.ALT_LEG1_INBOUND:
+            // HKG -> TPE (leg1 inbound from intermediate)
+            if (!('intermediateCityCode' in searchInfo)) {
+                throw new Error('intermediateCityCode required for ALT_LEG1_INBOUND');
+            }
+            departureCityCode = searchInfo.departureCityCode;
+            targetCityCode = searchInfo.intermediateCityCode;
+            productId = outboundFlightInfo?.productId;
+            policyId = outboundFlightInfo?.policyId;
+            break;
+
+        case LABELS.ALT_LEG2_OUTBOUND:
+            // HKG -> PRG (leg2 outbound from intermediate to target)
+            if (!('intermediateCityCode' in searchInfo)) {
+                throw new Error('intermediateCityCode required for ALT_LEG2_OUTBOUND');
+            }
+            departureCityCode = searchInfo.intermediateCityCode;
+            targetCityCode = searchInfo.targetCityCode;
+            break;
+
+        case LABELS.ALT_LEG2_INBOUND:
+            // PRG -> HKG (leg2 inbound from target to intermediate)
+            if (!('intermediateCityCode' in searchInfo)) {
+                throw new Error('intermediateCityCode required for ALT_LEG2_INBOUND');
+            }
+            departureCityCode = searchInfo.intermediateCityCode;
+            targetCityCode = searchInfo.targetCityCode;
+            productId = outboundFlightInfo?.productId;
+            policyId = outboundFlightInfo?.policyId;
+            break;
+
+        default:
+            throw new Error(`Unknown label: ${label}`);
+    }
+
+    // Create URL based on whether it's initial search or continuation
+    const url =
+        productId && policyId
+            ? createInboundUrl({
+                  departureCityCode,
+                  targetCityCode,
+                  departureDate: searchInfo.departureDate,
+                  returnDate: searchInfo.returnDate,
+                  productId,
+                  policyId,
+                  cabinClass: searchInfo.cabinClass,
+                  quantity: searchInfo.quantity,
+                  airlines: searchInfo.airlines,
+              })
+            : createOutBoundUrl({
+                  departureCityCode,
+                  targetCityCode,
+                  departureDate: searchInfo.departureDate,
+                  returnDate: searchInfo.returnDate,
+                  cabinClass: searchInfo.cabinClass,
+                  quantity: searchInfo.quantity,
+                  airlines: searchInfo.airlines,
+              });
+
+    // Build userData - only include what's provided
+    const userData: Record<string, unknown> = { searchInfo };
+
+    if (outboundFlightInfo) {
+        userData.outboundFlightInfo = outboundFlightInfo;
+    }
+
+    if (leg1FlightInfo) {
+        userData.leg1FLightInfo = leg1FlightInfo;
+    }
+
+    return { url, label, userData };
 }
 
 export interface OutBoundParams {
