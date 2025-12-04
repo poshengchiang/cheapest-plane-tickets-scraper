@@ -31,15 +31,15 @@ router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page }) => {
     const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
-    const combineFlightInfoDatasetPromises = topFlightInfos.map(async (inboundFlightInfo: FlightInfo) => {
-        const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
-        return await Dataset.pushData({
-            pattern: PATTERN.DIRECT_ROUTE,
-            flightInfo: combinedFlightInfo,
-        });
-    });
-
-    await Promise.all(combineFlightInfoDatasetPromises);
+    await Promise.all(
+        topFlightInfos.map(async (inboundFlightInfo: FlightInfo) => {
+            const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
+            return await Dataset.pushData({
+                pattern: PATTERN.DIRECT_ROUTE,
+                flightInfo: combinedFlightInfo,
+            });
+        }),
+    );
 });
 
 /**
@@ -106,13 +106,13 @@ router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page }) => {
         combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo),
     );
 
-    const resultPromises = combineFlightInfoList.map(async (combinedFlightInfo: FlightInfo) => {
-        const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
-        return await Dataset.pushData({
-            pattern: PATTERN.ALTERNATIVE_ROUTE,
-            flightInfo: finalCombinedFlightInfo,
-        });
-    });
-
-    await Promise.all(resultPromises);
+    await Promise.all(
+        combineFlightInfoList.map(async (combinedFlightInfo: FlightInfo) => {
+            const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
+            return await Dataset.pushData({
+                pattern: PATTERN.ALTERNATIVE_ROUTE,
+                flightInfo: finalCombinedFlightInfo,
+            });
+        }),
+    );
 });
