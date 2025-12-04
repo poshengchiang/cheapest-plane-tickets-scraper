@@ -70,16 +70,10 @@ export const captureResponseHook: PlaywrightHook = async ({ page, request }, got
 
     page.on('response', async (response) => {
         if (response.url().endsWith('FlightListSearch') && response.status() === 200) {
-            log.info(`Capturing response from: ${response.url()}`);
             try {
-                const text = await response.text();
-                log.info(`Preview of response text: ${text.slice(0, 300)}`);
-
                 const json = await response.json();
                 const extractedFlightsData = extractFlightData(json);
                 if (extractedFlightsData) {
-                    // Store in userData so requestHandler can access it
-                    log.info('Captured flight search response');
                     request.userData.inboundFlightInfoList = extractedFlightsData;
                 } else {
                     log.warning('No flight data extracted from flight search response');

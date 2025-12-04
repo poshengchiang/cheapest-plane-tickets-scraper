@@ -16,3 +16,5 @@ export enum PATTERN {
 }
 
 export const TOP_FLIGHTS_TO_COLLECT_LIMIT = 3;
+
+export const RESULTS_KEY = 'flight-results';

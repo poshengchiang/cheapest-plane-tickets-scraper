@@ -5,7 +5,7 @@
  */
 
 // For more information, see https://docs.apify.com/sdk/js
-import { Actor, log } from 'apify';
+import { Actor, Dataset, log } from 'apify';
 // For more information, see https://crawlee.dev
 import { PlaywrightCrawler } from 'crawlee';
 
@@ -14,6 +14,7 @@ import { PlaywrightCrawler } from 'crawlee';
 // note that we need to use `.js` even when inside TS files
 import { LABELS } from './constants.js';
 import { captureResponseHook, captureSSEResponseHook } from './hooks.js';
+import { resultsStore } from './ResultsStore.js';
 import { router } from './routes.js';
 import type { Input } from './types.js';
 import { createRequest } from './utils.js';
@@ -116,13 +117,20 @@ timePeriods.forEach((period) => {
 
 await crawler.run(startUrls);
 
-const dataset = await Actor.openDataset();
-const { items } = await dataset.getData();
-log.info(`Crawler finished. Total items saved to dataset: ${items.length}`);
+// Retrieve and sort all results
+const sortedResults = await resultsStore.getAllSorted();
+log.info(`Crawler finished. Total results collected: ${sortedResults.length}`);
 
-// Note: Items are already sorted by price in the dataset view (see dataset_schema.json)
-// No need to re-sort here as Apify Console can sort the view
-log.info(`Cheapest flight: ${items.length > 0 ? items[0].flightInfo.totalPrice : 'N/A'} TWD`);
+if (sortedResults.length === 0) {
+    log.warning('No flight results found');
+    await Actor.exit();
+}
+
+// Save sorted results to dataset
+await Dataset.pushData(sortedResults);
+
+log.info(`Saved ${sortedResults.length} sorted results to dataset`);
+log.info(`Cheapest flight: ${sortedResults[0].totalPrice} TWD (${sortedResults[0].pattern})`);
 
 // Exit successfully
 await Actor.exit();

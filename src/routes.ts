@@ -1,7 +1,8 @@
-import { createPlaywrightRouter, Dataset } from 'crawlee';
+import { createPlaywrightRouter } from 'crawlee';
 
 import { LABELS, PATTERN, TOP_FLIGHTS_TO_COLLECT_LIMIT } from './constants.js';
 import { getAndValidateFlightData, validateUserData } from './helpers.js';
+import { resultsStore } from './ResultsStore.js';
 import type { AlternativeRouteSearchInfo, DirectRouteSearchInfo, FlightInfo } from './types.js';
 import { combineAlternativeRouteFlightInfo, combineOutboundInboundFlightInfo, createRequest } from './utils.js';
 
@@ -39,22 +40,22 @@ router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page }) => {
     const searchInfo = validateUserData<DirectRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
-    await Promise.all(
-        topFlightInfos.map(async (inboundFlightInfo) => {
-            const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
-            return Dataset.pushData({
-                pattern: PATTERN.DIRECT_ROUTE,
-                totalPrice: combinedFlightInfo.totalPrice,
-                mainDepartureCity: combinedFlightInfo.departureCityCode,
-                intermediateCity: null,
-                targetCity: combinedFlightInfo.targetCityCode,
-                departureDate: searchInfo.departureDate,
-                returnDate: searchInfo.returnDate,
-                totalTimeMinutes: combinedFlightInfo.totalTimeMinutes,
-                flightInfo: combinedFlightInfo,
-            });
-        }),
-    );
+    const results = topFlightInfos.map((inboundFlightInfo) => {
+        const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
+        return {
+            pattern: PATTERN.DIRECT_ROUTE,
+            totalPrice: combinedFlightInfo.totalPrice,
+            mainDepartureCity: combinedFlightInfo.departureCityCode,
+            intermediateCity: null,
+            targetCity: combinedFlightInfo.targetCityCode,
+            departureDate: searchInfo.departureDate,
+            returnDate: searchInfo.returnDate,
+            totalTimeMinutes: combinedFlightInfo.totalTimeMinutes,
+            flightInfo: combinedFlightInfo,
+        };
+    });
+
+    await resultsStore.append(results);
 });
 
 /**
@@ -140,20 +141,20 @@ router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page }) => {
 
     const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
 
-    await Promise.all(
-        combineFlightInfoList.map(async (combinedFlightInfo: FlightInfo) => {
-            const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
-            return Dataset.pushData({
-                pattern: PATTERN.ALTERNATIVE_ROUTE,
-                totalPrice: finalCombinedFlightInfo.totalPrice,
-                mainDepartureCity: finalCombinedFlightInfo.departureCityCode,
-                intermediateCity: searchInfo.intermediateCityCode,
-                targetCity: finalCombinedFlightInfo.targetCityCode,
-                departureDate: searchInfo.departureDate,
-                returnDate: searchInfo.returnDate,
-                totalTimeMinutes: finalCombinedFlightInfo.totalTimeMinutes,
-                flightInfo: finalCombinedFlightInfo,
-            });
-        }),
-    );
+    const results = combineFlightInfoList.map((combinedFlightInfo: FlightInfo) => {
+        const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
+        return {
+            pattern: PATTERN.ALTERNATIVE_ROUTE,
+            totalPrice: finalCombinedFlightInfo.totalPrice,
+            mainDepartureCity: finalCombinedFlightInfo.departureCityCode,
+            intermediateCity: searchInfo.intermediateCityCode,
+            targetCity: finalCombinedFlightInfo.targetCityCode,
+            departureDate: searchInfo.departureDate,
+            returnDate: searchInfo.returnDate,
+            totalTimeMinutes: finalCombinedFlightInfo.totalTimeMinutes,
+            flightInfo: finalCombinedFlightInfo,
+        };
+    });
+
+    await resultsStore.append(results);
 });
