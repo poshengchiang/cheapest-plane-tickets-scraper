@@ -48,10 +48,19 @@ export interface OutBoundParams {
     returnDate: string; // Return date (YYYY-MM-DD format)
     cabinClass?: string; // Cabin class (default: 'y' for economy)
     quantity?: number; // Number of passengers (default: 1)
+    airlines?: string[]; // Preferred airlines (default: empty array)
 }
 
 export function createOutBoundUrl(params: OutBoundParams): string {
-    const { departureCityCode, targetCityCode, departureDate, returnDate, cabinClass = 'y', quantity = 1 } = params;
+    const {
+        departureCityCode,
+        targetCityCode,
+        departureDate,
+        returnDate,
+        cabinClass = 'y',
+        quantity = 1,
+        airlines = [],
+    } = params;
 
     const baseUrl = 'https://tw.trip.com/flights/showfarefirst';
     const searchParams = new URLSearchParams({
@@ -67,6 +76,10 @@ export function createOutBoundUrl(params: OutBoundParams): string {
         nonstoponly: 'off',
         sort: 'direct',
     });
+
+    if (airlines.length > 0) {
+        searchParams.append('airline', airlines.join(','));
+    }
 
     return `${baseUrl}?${searchParams.toString()}`;
 }
@@ -86,6 +99,7 @@ export interface InBoundParams {
     quantity?: number; // Number of passengers (default: 1)
     childqty?: number; // Number of children (default: 0)
     babyqty?: number; // Number of babies (default: 0)
+    airlines?: string[]; // Preferred airlines (default: empty array)
 }
 
 export function createInboundUrl(params: InBoundParams): string {
@@ -102,6 +116,7 @@ export function createInboundUrl(params: InBoundParams): string {
         quantity = 1,
         childqty = 0,
         babyqty = 0,
+        airlines = [],
     } = params;
 
     const baseUrl = 'https://tw.trip.com/flights/ShowFareNext';
@@ -125,6 +140,10 @@ export function createInboundUrl(params: InBoundParams): string {
         curr,
         sort: 'direct',
     });
+
+    if (airlines.length > 0) {
+        searchParams.append('airline', airlines.join(','));
+    }
 
     return `${baseUrl}?${searchParams.toString()}`;
 }

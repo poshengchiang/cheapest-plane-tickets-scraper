@@ -149,6 +149,7 @@ router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({ request, log, page, crawler 
         returnDate: searchInfo.returnDate,
         cabinClass: searchInfo.cabinClass,
         quantity: searchInfo.quantity,
+        airlines: searchInfo.airlines,
     });
 
     await crawler.addRequests([

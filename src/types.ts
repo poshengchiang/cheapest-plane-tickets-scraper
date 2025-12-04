@@ -30,6 +30,7 @@ export interface DirectRouteSearchInfo {
     returnDate: string; // YYYY-MM-DD format
     cabinClass: string; // 'Y' for Economy, 'C' for Business, 'F' for First
     quantity: number; // Number of passengers
+    airlines: string[]; // Preferred airlines
 }
 
 export interface DirectRouteRequest {

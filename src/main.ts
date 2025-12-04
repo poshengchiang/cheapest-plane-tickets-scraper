@@ -83,6 +83,7 @@ timePeriods.forEach((period) => {
         departureDate: outboundDate,
         returnDate: inboundDate,
         quantity: numberOfPeople,
+        airlines,
     });
 
     const directRouteRequest = {
@@ -96,6 +97,7 @@ timePeriods.forEach((period) => {
                 returnDate: inboundDate,
                 cabinClass,
                 quantity: numberOfPeople,
+                airlines,
             },
         },
     };
@@ -110,6 +112,7 @@ timePeriods.forEach((period) => {
                 departureDate: outboundDate,
                 returnDate: inboundDate,
                 quantity: numberOfPeople,
+                airlines,
             });
 
             const altRouteRequest = {
@@ -124,6 +127,7 @@ timePeriods.forEach((period) => {
                         returnDate: inboundDate,
                         cabinClass,
                         quantity: numberOfPeople,
+                        airlines,
                     },
                 },
             };
