@@ -1,17 +1,17 @@
 {
-	"actorSpecification": 1,
-	"name": "cheapest-plane-tickets-scraper",
-	"title": "Project Playwright Crawler Typescript",
-	"description": "Crawlee and Playwright project in typescript.",
-	"version": "0.0",
-	"meta": {
-		"templateId": "ts-crawlee-playwright-chrome",
-		"generatedBy": "<FILL-IN-MODEL>"
-	},
-	"input": "./input_schema.json",
-	"output": "./output_schema.json",
-	"storages": {
-		"dataset": "./dataset_schema.json"
-	},
-	"dockerfile": "../Dockerfile"
+    "actorSpecification": 1,
+    "name": "cheapest-plane-tickets-scraper",
+    "title": "Cheapest Plane Tickets Scraper",
+    "description": "Discover cheap flights on Trip.com by comparing direct routes and creative multi-city combinations. This price discovery tool finds potential savings through alternative routing (e.g., TPE→HKG→PRG vs direct). Note: Alternative routes show pricing opportunities but may have timing conflicts—verify manually before booking.",
+    "version": "0.0",
+    "meta": {
+        "templateId": "ts-crawlee-playwright-chrome",
+        "generatedBy": "<FILL-IN-MODEL>"
+    },
+    "input": "./input_schema.json",
+    "output": "./output_schema.json",
+    "storages": {
+        "dataset": "./dataset_schema.json"
+    },
+    "dockerfile": "../Dockerfile"
 }

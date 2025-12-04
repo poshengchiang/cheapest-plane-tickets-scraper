@@ -1,65 +1,82 @@
-## PlaywrightCrawler template
+# Cheapest Plane Tickets Scraper
 
-<!-- This is an Apify template readme -->
+Find the cheapest flights on Trip.com by comparing direct routes and creative multi-city combinations.
 
-This template is a production ready boilerplate for developing an [Actor](https://apify.com/actors) with `PlaywrightCrawler`. Use this to bootstrap your projects using the most up-to-date code.
+## 🎯 What It Does
 
-> We decided to split Apify SDK into two libraries, Crawlee and Apify SDK v3. Crawlee will retain all the crawling and scraping-related tools and will always strive to be the best [web scraping](https://apify.com/web-scraping) library for its community. At the same time, Apify SDK will continue to exist, but keep only the Apify-specific features related to building Actors on the Apify platform. Read the upgrading guide to learn about the changes.
+Discovers cheap flights using two strategies:
 
-## Resources
+- **Direct Routes**: TPE → PRG (standard round-trip)
+- **Alternative Routes**: TPE → HKG → PRG (multi-city combinations)
 
-If you're looking for examples or want to learn more visit:
+⚠️ **Note**: This is a price discovery tool. Alternative routes may have timing conflicts—verify manually on Trip.com before booking.
 
-- [Crawlee + Apify Platform guide](https://crawlee.dev/docs/guides/apify-platform)
-- [Documentation](https://crawlee.dev/api/playwright-crawler/class/PlaywrightCrawler) and [examples](https://crawlee.dev/docs/examples/playwright-crawler)
-- [Node.js tutorials](https://docs.apify.com/academy/node-js) in Academy
-- [Scraping single-page applications with Playwright](https://blog.apify.com/scraping-single-page-applications-with-playwright/)
-- [How to scale Puppeteer and Playwright](https://blog.apify.com/how-to-scale-puppeteer-and-playwright/)
-- [Integration with Zapier](https://apify.com/integrations), Make, GitHub, Google Drive and other apps
-- [Video guide on getting scraped data using Apify API](https://www.youtube.com/watch?v=ViYYDHSBAKM)
-- A short guide on how to build web scrapers using code templates:
-
-[web scraper template](https://www.youtube.com/watch?v=u-i-Korzf8w)
-
-
-## Getting started
-
-For complete information [see this article](https://docs.apify.com/platform/actors/development#build-actor-locally). To run the Actor use the following command:
+## 🚀 Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Run locally
 apify run
+
+# Deploy to Apify
+apify login
+apify push
 ```
 
-## Deploy to Apify
+## 📥 Input
 
-### Connect Git repository to Apify
+**Required:**
 
-If you've created a Git repository for the project, you can easily connect to Apify:
+- `mainDepartureCity` - Departure airport code (e.g., `TPE`)
+- `targetCity` - Destination airport code (e.g., `PRG`)
+- `cabinClass` - `Y` (Economy), `C` (Business), `F` (First)
+- `numberOfPeople` - Passengers (1-9)
 
-1. Go to [Actor creation page](https://console.apify.com/actors/new)
-2. Click on **Link Git Repository** button
+**Optional:**
 
-### Push project on your local machine to Apify
+- `timePeriods` - Travel dates (defaults to 30 days from now)
+- `alternativeDepartureCities` - Intermediate cities (e.g., `["HKG", "ICN"]`)
+- `airlines` - Filter by airlines
+- `maxRequestsPerCrawl` - Request limit (default: 1000)
 
-You can also deploy the project on your local machine to Apify without the need for the Git repository.
+## 📊 Output
 
-1. Log in to Apify. You will need to provide your [Apify API Token](https://console.apify.com/account/integrations) to complete this action.
+Dataset sorted by price (cheapest first) with:
 
-    ```bash
-    apify login
-    ```
+- Route type (direct/alternative)
+- Total price (TWD)
+- Departure/destination/intermediate cities
+- Travel dates and duration
+- Complete flight details
 
-2. Deploy your Actor. This command will deploy and build the Actor on the Apify Platform. You can find your newly created Actor under [Actors -> My Actors](https://console.apify.com/actors?tab=my).
+## 🔍 How It Works
 
-    ```bash
-    apify push
-    ```
+### Direct Route (2 steps)
 
-## Documentation reference
+1. Search outbound flights (TPE → PRG) - select top 3
+2. For each outbound, search inbound flights (PRG → TPE)
+3. Save all combinations
 
-To learn more about Apify and Actors, take a look at the following resources:
+### Alternative Route (4 steps)
 
-- [Apify SDK for JavaScript documentation](https://docs.apify.com/sdk/js)
-- [Apify SDK for Python documentation](https://docs.apify.com/sdk/python)
-- [Apify Platform documentation](https://docs.apify.com/platform)
-- [Join our developer community on Discord](https://discord.com/invite/jyEM2PRvMU)
+1. **Leg 1 Out**: TPE → HKG (top 3)
+2. **Leg 1 In**: HKG → PRG (best only)
+3. **Leg 2 Out**: PRG → HKG (top 3)
+4. **Leg 2 In**: HKG → TPE (all combinations)
+5. Save complete 4-leg journeys
+
+⚠️ Leg 1 searches same-day connections for price reference only—transfer times not validated.
+
+## 🛠️ Technical Details
+
+- **Framework**: Crawlee + Playwright
+- **Data Source**: Trip.com Taiwan API (SSE + JSON)
+- **Storage**: Results stored in key-value store, then sorted and saved to dataset
+- **Concurrency**: 3 parallel requests
+- **Performance**: ~40 requests for 2 time periods + 2 intermediate cities
+
+## 📄 License
+
+MIT License
