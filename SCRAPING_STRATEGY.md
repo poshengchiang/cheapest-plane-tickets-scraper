@@ -1,349 +1,174 @@
-# Scraping Strategy - Best Plane Tickets Scraper
+# Scraping Strategy - Cheapest Plane Tickets Scraper
 
 ## Overview
 
-This Actor finds the cheapest plane tickets by comparing direct routes with alternative routing options that use intermediate cities. It scrapes Trip.com (https://tw.trip.com/flights/) to find the best flight combinations.
+This Actor finds the cheapest plane tickets by scraping Trip.com and comparing:
 
-**Strategy:** Compare direct flights (MDC → TC) with multi-leg alternatives (MDC → ADC → TC) to find hidden cheap combinations.
+- **Direct routes**: Main Departure City → Target City
+- **Alternative routes**: Main Departure City → Intermediate City → Target City
 
----
-
-## User Input Parameters
-
-### Required Inputs
-
-| Parameter                          | Type          | Description                                     | Example                        |
-| ---------------------------------- | ------------- | ----------------------------------------------- | ------------------------------ |
-| `mainDepartureCity` (MDC)          | String        | Primary departure city/airport                  | `TPE` (Taipei)                 |
-| `targetCity` (TC)                  | String        | Final destination city/airport                  | `NRT` (Tokyo)                  |
-| `alternativeDepartureCities` (ADC) | Array[String] | Intermediate cities to check for cheaper routes | `['HKG', 'ICN']`               |
-| `class`                            | Enum          | Cabin class                                     | `Economy`, `Business`, `First` |
-| `numberOfPeople`                   | Integer       | Number of passengers                            | `2`                            |
-| `timePeriods`                      | Array[Object] | Travel date ranges                              | See below                      |
-
-**Time Period Object Structure:**
-
-```json
-{
-    "outboundDateStart": "2025-12-10",
-    "outboundDateEnd": "2025-12-12",
-    "inboundDateStart": "2025-12-17",
-    "inboundDateEnd": "2025-12-19"
-}
-```
-
-_Note: Each time period defines a date range for departure from MDC and return to MDC. The scraper will search all date combinations within these ranges._
-
-### Optional Inputs
-
-| Parameter             | Type        | Default | Description                                                                                  |
-| --------------------- | ----------- | ------- | -------------------------------------------------------------------------------------------- |
-| `airlines`            | Array[Enum] | `null`  | Filter by specific airlines - applies to ALL flight legs (e.g., `['EVA', 'China Airlines']`) |
-| `targetLowestPrice`   | Boolean     | `true`  | Whether to sort results by price (lowest first)                                              |
-| `transferTimeHours`   | Integer     | `3`     | Minimum hours required between connecting flights                                            |
-| `adcBufferHours`      | Integer     | `24`    | Hours buffer for ADC→TC leg (search ±N hours from MDC departure/return)                      |
-| `maxRequestsPerCrawl` | Integer     | `1000`  | Limit total requests                                                                         |
+The scraper searches for round-trip flights and intelligently combines flight legs to find the best deals.
 
 ---
 
-## Scraping Approach
+## Input Parameters
 
-### Phase 1: Direct Routes (MDC → TC)
+### Required
 
-Search for direct round-trip flights from Main Departure City to Target City.
+- `mainDepartureCity` - Departure airport code (e.g., `TPE`)
+- `targetCity` - Destination airport code (e.g., `PRG`)
+- `timePeriods` - Array of travel dates:
+    ```json
+    [{ "outboundDate": "2025-12-10", "inboundDate": "2025-12-17" }]
+    ```
+- `cabinClass` - `Y` (Economy), `C` (Business), or `F` (First)
+- `numberOfPeople` - Number of passengers (1-9)
 
-**For each time period:**
+### Optional
 
-1. Generate all date combinations within the range:
-    - Outbound dates: from `outboundDateStart` to `outboundDateEnd`
-    - Inbound dates: from `inboundDateStart` to `inboundDateEnd`
-2. For each date combination:
-    - Navigate to: `https://tw.trip.com/flights/`
-    - Input search parameters:
-        - From: MDC
-        - To: TC
-        - Outbound date: specific date from range
-        - Inbound date: specific date from range
-        - Class: user-specified
-        - Passengers: user-specified
-    - Extract all available flight combinations
-
-### Phase 2: Alternative Routes via ADC (MDC → ADC → TC)
-
-For each Alternative Departure City, search for two-leg combinations.
-
-**For each ADC and each time period:**
-
-#### Step 2A: Search MDC ↔ ADC round trips
-
-1. For each date combination in the range:
-    - Outbound: `outboundDateStart` to `outboundDateEnd`
-    - Inbound: `inboundDateStart` to `inboundDateEnd`
-    - Search MDC ↔ ADC round-trip flights
-2. Store results for pairing
-
-#### Step 2B: Search ADC ↔ TC round trips with buffer
-
-**Important:** ADC→TC timing is constrained by when you arrive/leave ADC:
-
-1. For **outbound** ADC → TC:
-    - Based on each MDC → ADC arrival date
-    - Search ADC → TC flights on: **same day, +1 day** from ADC arrival
-2. For **inbound** TC → ADC:
-    - Based on each ADC → MDC departure date
-    - Search TC → ADC flights on: **same day, -1 day** from ADC departure
-
-_Example: If MDC→ADC arrives Dec 10, search ADC→TC for Dec 10-11. If ADC→MDC departs Dec 17, search TC→ADC for Dec 16-17._
-
-#### Step 2C: Pair Compatible Flights
-
-Match flights within the same time period that satisfy transfer time requirements:
-
-**Outbound Journey (MDC → ADC → TC):**
-
-```
-MDC → ADC arrival time + transferTimeHours <= ADC → TC departure time
-```
-
-**Inbound Journey (TC → ADC → MDC):**
-
-```
-TC → ADC arrival time + transferTimeHours <= ADC → MDC departure time
-```
-
-**Important:** All 4 legs must be within the same time period (no cross-period combinations).
+- `alternativeDepartureCities` - Array of intermediate cities (e.g., `["HKG", "ICN"]`)
+- `airlines` - Filter by airlines (e.g., `["EVA", "China Airlines"]`)
+- `maxRequestsPerCrawl` - Request limit (default: 1000)
 
 ---
 
-## Data Extraction Schema
+## How It Works
 
-### Direct Route Output
+### Direct Route (2 steps)
+
+**Example: TPE → PRG**
+
+1. **Step 1: Search outbound flights (TPE → PRG)**
+    - Scrape top N cheapest flights
+    - For each flight, create inbound search request
+
+2. **Step 2: Search inbound flights (PRG → TPE)**
+    - Search return flights for each outbound option
+    - Combine outbound + inbound flights
+    - Save to dataset
+
+**Result:** Direct round-trip combinations
+
+### Alternative Route (4 steps)
+
+**Example: TPE → HKG → PRG (using HKG as intermediate city)**
+
+> ⚠️ **Important Notice**: Leg 1 (Departure → Intermediate → Target) searches use the same date for both flights. This is **for price reference only** and may result in transfer time conflicts. The actual implementation does NOT validate transfer time feasibility for Leg 1 combinations.
+
+1. **Step 1: Leg 1 Outbound (TPE → HKG)**
+    - Search flights from main departure to intermediate city
+    - Select top N cheapest options
+
+2. **Step 2: Leg 1 Inbound (HKG → PRG)**
+    - Search flights from intermediate to target city **on the same date**
+    - Use the BEST (cheapest) option only
+    - Combine Leg 1 outbound + inbound → `leg1FlightInfo`
+
+3. **Step 3: Leg 2 Outbound (PRG → HKG)**
+    - Search return flights from target to intermediate city
+    - Select top N cheapest options
+
+4. **Step 4: Leg 2 Inbound (HKG → TPE)**
+    - Search final leg from intermediate back to main departure
+    - Combine all 4 legs together
+    - Save complete alternative route to dataset
+
+**Result:** Alternative 4-leg round-trip combinations
+
+---
+
+## Data Extraction
+
+### Trip.com API
+
+The scraper uses Trip.com's internal API endpoints:
+
+1. **Outbound search**: `https://tw.trip.com/flights/showfarefirst`
+    - Returns SSE (Server-Sent Events) stream with flight data
+    - Captured via preNavigationHook: `captureSSEResponseHook`
+
+2. **Inbound search**: `https://tw.trip.com/flights/ShowFareNext`
+    - Returns JSON response with flight data
+    - Captured via preNavigationHook: `captureResponseHook`
+
+### Output Schema
+
+Each saved record contains:
 
 ```typescript
 {
-    routeType: "DIRECT",
-    departureCity: "MDC",
-    targetCity: "TC",
+  pattern: "DIRECT_ROUTE" | "ALTERNATIVE_ROUTE",
+  flightInfo: {
     totalPrice: number,
-    totalTimeHours: number,
-    totalFlights: 2, // outbound + inbound
-
+    totalTimeMinutes: number,
+    departureCityCode: string,
+    departureCityName: string,
+    targetCityCode: string,
+    targetCityName: string,
+    totalFlights: number,  // 2 for direct, 4 for alternative
+    productId: string,
+    policyId: string,
     flights: [
-        {
-            leg: "outbound",
-            departureAirport: string,
-            departureTime: string, // ISO 8601
-            arrivalAirport: string,
-            arrivalTime: string,
-            flightSegments: [
-                {
-                    airline: string,      // e.g., "EVA Air"
-                    flightNumber: string  // e.g., "BR189"
-                }
-                // Multiple segments for connecting flights
-            ],
-            durationTimeHours: number
+      {
+        departureCityCode: string,
+        departureAirport: string,
+        departureTime: string,  // ISO 8601
+        arrivalCityCode: string,
+        arrivalAirport: string,
+        arrivalTime: string,
+        flightSegment: {
+          airline: string,
+          flightNumber: string
         },
-        {
-            leg: "inbound",
-            departureAirport: string,
-            departureTime: string,
-            arrivalAirport: string,
-            arrivalTime: string,
-            flightSegments: [
-                {
-                    airline: string,
-                    flightNumber: string
-                }
-            ],
-            durationTimeHours: number
-        }
-    ],
-
-    timePeriod: {
-        outboundDate: string,  // Actual selected date
-        inboundDate: string    // Actual selected date
-    }
-}
-```
-
-### Alternative Route Output
-
-```typescript
-{
-    routeType: "ALTERNATIVE",
-    departureCity: "MDC",
-    intermediateCity: "ADC",
-    targetCity: "TC",
-    totalPrice: number,
-    totalTimeHours: number,
-    totalFlights: 4, // MDC→ADC, ADC→TC, TC→ADC, ADC→MDC
-
-    flights: [
-        {
-            leg: "MDC_to_ADC",
-            departureAirport: string,
-            departureTime: string,
-            arrivalAirport: string,
-            arrivalTime: string,
-            flightSegments: [
-                {
-                    airline: string,
-                    flightNumber: string
-                }
-            ],
-            durationTimeHours: number
-        },
-        {
-            leg: "ADC_to_TC",
-            departureAirport: string,
-            departureTime: string,
-            arrivalAirport: string,
-            arrivalTime: string,
-            flightSegments: [
-                {
-                    airline: string,
-                    flightNumber: string
-                }
-            ],
-            durationTimeHours: number
-        },
-        {
-            leg: "TC_to_ADC",
-            departureAirport: string,
-            departureTime: string,
-            arrivalAirport: string,
-            arrivalTime: string,
-            flightSegments: [
-                {
-                    airline: string,
-                    flightNumber: string
-                }
-            ],
-            durationTimeHours: number
-        },
-        {
-            leg: "ADC_to_MDC",
-            departureAirport: string,
-            departureTime: string,
-            arrivalAirport: string,
-            arrivalTime: string,
-            flightSegments: [
-                {
-                    airline: string,
-                    flightNumber: string
-                }
-            ],
-            durationTimeHours: number
-        }
-    ],
-
-    timePeriod: {
-        outboundDate: string,  // Actual selected date
-        inboundDate: string    // Actual selected date
-    }
+        durationTimeMinutes: number
+      },
+      // ... more flight legs
+    ]
+  }
 }
 ```
 
 ---
 
-## Page Types & Selectors (Trip.com)
+## Performance
 
-### 1. Search Form Page
+### Request Estimation
 
-**URL:** `https://tw.trip.com/flights/`
-
-**Actions:**
-
-- Fill departure city
-- Fill arrival city
-- Select dates
-- Select class
-- Select number of passengers
-- Submit search
-
-**Selectors (to be determined):**
-
-```typescript
-// Will be updated after inspecting actual page
-from: 'input[placeholder*="出發城市"]',
-to: 'input[placeholder*="目的地"]',
-date: '.date-picker',
-class: '.cabin-class-select',
-passengers: '.passenger-count',
-search: 'button.search-btn'
-```
-
-### 2. Flight Results/Listing Page
-
-**URL:** `https://tw.trip.com/flights/[route]/[dates]`
-
-**Data to Extract:**
-
-- Flight cards (all available combinations)
-- Price for each option
-- Flight details (times, airlines, numbers)
-- Duration information
-
-**Selectors (to be determined):**
-
-```typescript
-flightCard: '.flight-item',
-price: '.price-box .price',
-outbound: '.segment.outbound',
-inbound: '.segment.inbound',
-departureTime: '.departure-time',
-arrivalTime: '.arrival-time',
-airline: '.airline-name',
-flightNumber: '.flight-number',
-duration: '.duration'
-```
-
-### 3. Flight Detail Modal/Page
-
-**Actions:**
-
-- Extract detailed flight information if needed
-- Verify pricing
-
----
-
-### Request Calculation
-
-For `n` time periods, `m` alternative cities, and average `d` days per range:
+For `n` time periods, `m` alternative cities, and `N` = top flights limit (default: 3):
 
 **Direct routes:**
 
-- Searches per period: `d_outbound × d_inbound` (all date combinations)
-- Total: `n × d_outbound × d_inbound`
+- Step 1: `n` outbound searches (1 per time period)
+- Step 2: `n × N` inbound searches (N for each outbound flight)
+- **Total per route**: `n × (1 + N)` requests
+- **Dataset items**: `n × N × N` combinations
 
-**Alternative routes per ADC:**
+**Alternative routes:**
 
-- MDC↔ADC: `d_outbound + d_inbound` one-way searches
-- ADC↔TC: `d_outbound × 2 + d_inbound × 2` (±1 day buffer for each MDC leg date)
-- Total per ADC: `d_outbound × 3 + d_inbound × 3`
+- Step 1 (Leg 1 Outbound): `n × m` searches
+- Step 2 (Leg 1 Inbound): `n × m × N` searches
+- Step 3 (Leg 2 Outbound): `n × m × 1` searches (best option only)
+- Step 4 (Leg 2 Inbound): `n × m × N` searches
+- **Total per route**: `n × m × (1 + N + 1 + N)` = `n × m × (2 + 2N)` requests
+- **Dataset items**: `n × m × N` combinations (pruned at Leg 1)
 
-**Total for all ADCs:** `n × m × (d_outbound × 3 + d_inbound × 3)`
+**Grand Total**: `n × (1 + N + m × (2 + 2N))` requests
 
-**Grand Total:** `n × (d_outbound × d_inbound + m × (d_outbound × 3 + d_inbound × 3))`
+**Example (N=3):**
 
-**Example:**
+- 2 time periods, 2 alternative cities
+- Direct: 2 × (1 + 3) = **8 requests** → 18 dataset items
+- Alternative: 2 × 2 × (2 + 6) = **32 requests** → 12 dataset items
+- **Total: 40 requests, 30 dataset items**
 
-- 1 time period, 3-day outbound range, 3-day inbound range, 2 ADCs
-- Direct: 1 × 3 × 3 = 9 searches
-- Alternative: 1 × 2 × (3×3 + 3×3) = 36 searches
-- **Total: 45 searches**
+### Optimizations
+
+1. **Top N selection**: Only process top N cheapest flights at each step (default: 3)
+2. **Alternative route pruning**: Use only BEST option for Leg 1 inbound, reducing from N² to N combinations
+3. **Concurrent processing**: Crawlee handles parallel requests automatically (maxConcurrency: 3)
+4. **Result sorting**: Final dataset sorted by price (cheapest first)
 
 ---
 
-### Filtering
-
-- Apply airline filter if specified: **ALL flight legs must use only the specified airlines**
-    - For direct routes: both outbound and inbound flights
-    - For alternative routes: all 4 legs must comply
-    - Reject entire route if any leg uses non-approved airline
-- Remove invalid pairs (insufficient transfer time)
-- Deduplicate identical routes
-
-**Last Updated:** November 27, 2025
-**Status:** Planning Phase
+**Last Updated:** December 4, 2025  
+**Status:** Implementation Complete
