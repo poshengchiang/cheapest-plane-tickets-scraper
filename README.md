@@ -76,7 +76,3 @@ Dataset sorted by price (cheapest first) with:
 - **Storage**: Results stored in key-value store, then sorted and saved to dataset
 - **Concurrency**: 3 parallel requests
 - **Performance**: ~40 requests for 2 time periods + 2 intermediate cities
-
-## 📄 License
-
-MIT License
