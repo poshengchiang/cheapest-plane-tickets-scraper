@@ -12,11 +12,10 @@ import { PlaywrightCrawler } from 'crawlee';
 // this is ESM project, and as such, it requires you to specify extensions in your relative imports
 // read more about this here: https://nodejs.org/docs/latest-v18.x/api/esm.html#mandatory-file-extensions
 // note that we need to use `.js` even when inside TS files
-import { LABELS } from './constants.js';
 import { captureResponseHook, captureSSEResponseHook } from './hooks.js';
 import { router } from './routes.js';
 import type { DirectRouteRequest, Input } from './types.js';
-import { createOutBoundUrl } from './utils.js';
+import { createAlternativeRouteRequest, createDirectRouteRequest } from './utils.js';
 
 // Initialize the Apify SDK
 await Actor.init();
@@ -77,60 +76,32 @@ const startUrls: DirectRouteRequest[] = [];
 
 timePeriods.forEach((period) => {
     const { outboundDate, inboundDate } = period;
-    const directRouteUrl = createOutBoundUrl({
-        departureCityCode: mainDepartureCity,
-        targetCityCode: targetCity,
-        departureDate: outboundDate,
-        returnDate: inboundDate,
-        quantity: numberOfPeople,
+
+    // Create direct route request
+    const directRouteRequest = createDirectRouteRequest({
+        mainDepartureCity,
+        targetCity,
+        outboundDate,
+        inboundDate,
+        numberOfPeople,
+        cabinClass,
         airlines,
     });
-
-    const directRouteRequest = {
-        url: directRouteUrl,
-        label: LABELS.DIRECT_OUTBOUND,
-        userData: {
-            searchInfo: {
-                departureCityCode: mainDepartureCity,
-                targetCityCode: targetCity,
-                departureDate: outboundDate,
-                returnDate: inboundDate,
-                cabinClass,
-                quantity: numberOfPeople,
-                airlines,
-            },
-        },
-    };
-
     startUrls.push(directRouteRequest);
 
+    // Create alternative route requests
     if (alternativeDepartureCities.length > 0) {
         alternativeDepartureCities.forEach((intermediateCity) => {
-            const altUrl = createOutBoundUrl({
-                departureCityCode: mainDepartureCity,
-                targetCityCode: intermediateCity,
-                departureDate: outboundDate,
-                returnDate: inboundDate,
-                quantity: numberOfPeople,
+            const altRouteRequest = createAlternativeRouteRequest({
+                mainDepartureCity,
+                intermediateCity,
+                targetCity,
+                outboundDate,
+                inboundDate,
+                numberOfPeople,
+                cabinClass,
                 airlines,
             });
-
-            const altRouteRequest = {
-                url: altUrl,
-                label: LABELS.ALT_LEG1_OUTBOUND,
-                userData: {
-                    searchInfo: {
-                        departureCityCode: mainDepartureCity,
-                        intermediateCityCode: intermediateCity,
-                        targetCityCode: targetCity,
-                        departureDate: outboundDate,
-                        returnDate: inboundDate,
-                        cabinClass,
-                        quantity: numberOfPeople,
-                        airlines,
-                    },
-                },
-            };
             startUrls.push(altRouteRequest);
         });
     }

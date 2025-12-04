@@ -1,7 +1,15 @@
 import { log } from 'apify';
 import type { PlaywrightCrawlingContext } from 'crawlee';
 
-import type { FlightData, FlightInfo, FlightResponseData, FlightSection } from './types.js';
+import { LABELS } from './constants.js';
+import type {
+    AlternativeRouteRequest,
+    DirectRouteRequest,
+    FlightData,
+    FlightInfo,
+    FlightResponseData,
+    FlightSection,
+} from './types.js';
 
 /**
  * Wait for data to appear in request.userData with periodic checks
@@ -39,6 +47,84 @@ export async function waitForUserData<T>(
     }
 
     return data ?? null;
+}
+
+/**
+ * Create a direct route request
+ */
+export function createDirectRouteRequest(params: {
+    mainDepartureCity: string;
+    targetCity: string;
+    outboundDate: string;
+    inboundDate: string;
+    numberOfPeople: number;
+    cabinClass: string;
+    airlines?: string[];
+}): DirectRouteRequest {
+    const url = createOutBoundUrl({
+        departureCityCode: params.mainDepartureCity,
+        targetCityCode: params.targetCity,
+        departureDate: params.outboundDate,
+        returnDate: params.inboundDate,
+        quantity: params.numberOfPeople,
+        airlines: params.airlines,
+    });
+
+    return {
+        url,
+        label: LABELS.DIRECT_OUTBOUND,
+        userData: {
+            searchInfo: {
+                departureCityCode: params.mainDepartureCity,
+                targetCityCode: params.targetCity,
+                departureDate: params.outboundDate,
+                returnDate: params.inboundDate,
+                cabinClass: params.cabinClass,
+                quantity: params.numberOfPeople,
+                ...(params.airlines && { airlines: params.airlines }),
+            },
+        },
+    };
+}
+
+/**
+ * Create an alternative route request
+ */
+export function createAlternativeRouteRequest(params: {
+    mainDepartureCity: string;
+    intermediateCity: string;
+    targetCity: string;
+    outboundDate: string;
+    inboundDate: string;
+    numberOfPeople: number;
+    cabinClass: string;
+    airlines?: string[];
+}): AlternativeRouteRequest {
+    const url = createOutBoundUrl({
+        departureCityCode: params.mainDepartureCity,
+        targetCityCode: params.intermediateCity,
+        departureDate: params.outboundDate,
+        returnDate: params.inboundDate,
+        quantity: params.numberOfPeople,
+        airlines: params.airlines,
+    });
+
+    return {
+        url,
+        label: LABELS.ALT_LEG1_OUTBOUND,
+        userData: {
+            searchInfo: {
+                departureCityCode: params.mainDepartureCity,
+                intermediateCityCode: params.intermediateCity,
+                targetCityCode: params.targetCity,
+                departureDate: params.outboundDate,
+                returnDate: params.inboundDate,
+                cabinClass: params.cabinClass,
+                quantity: params.numberOfPeople,
+                ...(params.airlines && { airlines: params.airlines }),
+            },
+        },
+    };
 }
 
 export interface OutBoundParams {

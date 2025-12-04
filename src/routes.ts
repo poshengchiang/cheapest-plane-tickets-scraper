@@ -1,13 +1,13 @@
 import { createPlaywrightRouter, Dataset } from 'crawlee';
 
 import { LABELS, PATTERN, TOP_FLIGHTS_TO_COLLECT_LIMIT } from './constants.js';
+import { getAndValidateFlightData, validateUserData } from './helpers.js';
 import type { AlternativeRouteSearchInfo, DirectRouteSearchInfo, FlightInfo } from './types.js';
 import {
     combineAlternativeRouteFlightInfo,
     combineOutboundInboundFlightInfo,
     createInboundUrl,
     createOutBoundUrl,
-    waitForUserData,
 } from './utils.js';
 
 export const router = createPlaywrightRouter();
@@ -15,16 +15,10 @@ export const router = createPlaywrightRouter();
 /**
  * Handlers for Direct route
  */
-router.addHandler(LABELS.DIRECT_OUTBOUND, async ({ request, log, page, crawler }) => {
-    const outboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'outboundFlightInfoList');
-
-    if (!outboundFlightInfoList) {
-        log.error('Outbound flight data is still missing after 30 seconds.');
-        throw new Error('Missing outbound flight data after 30 seconds of waiting');
-    }
+router.addHandler(LABELS.DIRECT_OUTBOUND, async ({ request, page, crawler }) => {
+    const outboundFlightInfoList = await getAndValidateFlightData(request, page, 'outboundFlightInfoList');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
-
-    const searchInfo = request.userData.searchInfo as DirectRouteSearchInfo;
+    const searchInfo = validateUserData<DirectRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
 
     for (const flightInfo of topFlightInfos) {
         const inboundFlightSearchUrl = createInboundUrl({
@@ -51,29 +45,12 @@ router.addHandler(LABELS.DIRECT_OUTBOUND, async ({ request, log, page, crawler }
     }
 });
 
-router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page, log }) => {
-    const inboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'inboundFlightInfoList');
-
-    if (!inboundFlightInfoList) {
-        log.error('Inbound flight data is still missing after 30 seconds.');
-        throw new Error('Missing inbound flight data after 30 seconds of waiting');
-    }
-
-    const outboundFlightInfo = request.userData.outboundFlightInfo as FlightInfo;
-
-    if (!outboundFlightInfo) {
-        log.error('No outbound flight info found in request.userData');
-        throw new Error('Missing outbound flight info');
-    }
-
-    if (!inboundFlightInfoList) {
-        log.error('Inbound flight info is not found in request.userData.');
-        throw new Error('Missing inbound flight info');
-    }
-
+router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page }) => {
+    const inboundFlightInfoList = await getAndValidateFlightData(request, page, 'inboundFlightInfoList');
+    const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
-    const combineFlightInfoDatasetPromises = topFlightInfos.map(async (inboundFlightInfo) => {
+    const combineFlightInfoDatasetPromises = topFlightInfos.map(async (inboundFlightInfo: FlightInfo) => {
         const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
         return await Dataset.pushData({
             pattern: PATTERN.DIRECT_ROUTE,
@@ -87,15 +64,10 @@ router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page, log }) => {
 /**
  * Handlers for Alternative route
  */
-router.addHandler(LABELS.ALT_LEG1_OUTBOUND, async ({ request, log, page, crawler }) => {
-    const outboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'outboundFlightInfoList');
-    if (!outboundFlightInfoList) {
-        log.error('Outbound flight data is still missing after 30 seconds.');
-        throw new Error('Missing outbound flight data after 30 seconds of waiting');
-    }
+router.addHandler(LABELS.ALT_LEG1_OUTBOUND, async ({ request, page, crawler }) => {
+    const outboundFlightInfoList = await getAndValidateFlightData(request, page, 'outboundFlightInfoList');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
-
-    const searchInfo = request.userData.searchInfo as AlternativeRouteSearchInfo;
+    const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
 
     for (const flightInfo of topFlightInfos) {
         const inboundFlightSearchUrl = createInboundUrl({
@@ -122,22 +94,10 @@ router.addHandler(LABELS.ALT_LEG1_OUTBOUND, async ({ request, log, page, crawler
     }
 });
 
-router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({ request, log, page, crawler }) => {
-    const inboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'inboundFlightInfoList');
-
-    if (!inboundFlightInfoList) {
-        log.error('Inbound flight data is still missing after 30 seconds.');
-        throw new Error('Missing inbound flight data after 30 seconds of waiting');
-    }
-
-    const outboundFlightInfo = request.userData.outboundFlightInfo as FlightInfo;
-
-    if (!outboundFlightInfo) {
-        log.error('No outbound flight info found in request.userData');
-        throw new Error('Missing outbound flight info');
-    }
-
-    const searchInfo = request.userData.searchInfo as AlternativeRouteSearchInfo;
+router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({ request, page, crawler }) => {
+    const inboundFlightInfoList = await getAndValidateFlightData(request, page, 'inboundFlightInfoList');
+    const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
+    const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
     const topFlightInfo = inboundFlightInfoList[0];
 
     const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, topFlightInfo);
@@ -164,16 +124,11 @@ router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({ request, log, page, crawler 
     ]);
 });
 
-router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({ request, log, page, crawler }) => {
-    const outboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'outboundFlightInfoList');
-    if (!outboundFlightInfoList) {
-        log.error('Outbound flight data is still missing after 30 seconds.');
-        throw new Error('Missing outbound flight data after 30 seconds of waiting');
-    }
+router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({ request, page, crawler }) => {
+    const outboundFlightInfoList = await getAndValidateFlightData(request, page, 'outboundFlightInfoList');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
-
-    const searchInfo = request.userData.searchInfo as AlternativeRouteSearchInfo;
-    const leg1FLightInfo = request.userData.leg1FLightInfo as FlightInfo;
+    const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
+    const leg1FLightInfo = validateUserData<FlightInfo>(request.userData.leg1FLightInfo, 'leg1FLightInfo');
 
     for (const flightInfo of topFlightInfos) {
         const inboundFlightSearchUrl = createInboundUrl({
@@ -201,35 +156,17 @@ router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({ request, log, page, crawler
     }
 });
 
-router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page, log }) => {
-    const inboundFlightInfoList = await waitForUserData<FlightInfo[]>(request, page, 'inboundFlightInfoList');
-
-    if (!inboundFlightInfoList) {
-        log.error('Inbound flight data is still missing after 30 seconds.');
-        throw new Error('Missing inbound flight data after 30 seconds of waiting');
-    }
-
-    const outboundFlightInfo = request.userData.outboundFlightInfo as FlightInfo;
-
-    if (!outboundFlightInfo) {
-        log.error('No outbound flight info found in request.userData');
-        throw new Error('Missing outbound flight info');
-    }
-
-    const leg1FLightInfo = request.userData.leg1FLightInfo as FlightInfo;
-
-    if (!leg1FLightInfo) {
-        log.error('No leg 1 flight info found in request.userData');
-        throw new Error('Missing leg 1 flight info');
-    }
-
+router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page }) => {
+    const inboundFlightInfoList = await getAndValidateFlightData(request, page, 'inboundFlightInfoList');
+    const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
+    const leg1FLightInfo = validateUserData<FlightInfo>(request.userData.leg1FLightInfo, 'leg1FLightInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
-    const combineFlightInfoList = topFlightInfos.map((inboundFlightInfo) =>
+    const combineFlightInfoList = topFlightInfos.map((inboundFlightInfo: FlightInfo) =>
         combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo),
     );
 
-    const resultPromises = combineFlightInfoList.map(async (combinedFlightInfo) => {
+    const resultPromises = combineFlightInfoList.map(async (combinedFlightInfo: FlightInfo) => {
         const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FLightInfo, combinedFlightInfo);
         return await Dataset.pushData({
             pattern: PATTERN.ALTERNATIVE_ROUTE,
