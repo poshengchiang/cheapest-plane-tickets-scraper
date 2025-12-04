@@ -50,26 +50,67 @@ export async function waitForUserData<T>(
 }
 
 /**
- * Unified parameters for creating any request (initial or continuation)
+ * Type-safe parameters for creating requests with label-specific requirements
+ * Each label requires specific searchInfo and flightInfo parameters
  */
-export interface CreateRequestParams {
-    // Required for all requests
-    label: (typeof LABELS)[keyof typeof LABELS];
-    searchInfo: DirectRouteSearchInfo | AlternativeRouteSearchInfo;
 
-    // Optional: for continuation requests (outbound -> inbound)
-    outboundFlightInfo?: FlightInfo;
-
-    // Optional: for alternative route leg2
-    leg1FlightInfo?: FlightInfo;
+// Initial outbound requests (no previous flight info needed)
+interface DirectOutboundParams {
+    label: typeof LABELS.DIRECT_OUTBOUND;
+    searchInfo: DirectRouteSearchInfo;
 }
+
+interface AltLeg1OutboundParams {
+    label: typeof LABELS.ALT_LEG1_OUTBOUND;
+    searchInfo: AlternativeRouteSearchInfo;
+}
+
+// Continuation requests for inbound (requires outboundFlightInfo)
+interface DirectInboundParams {
+    label: typeof LABELS.DIRECT_INBOUND;
+    searchInfo: DirectRouteSearchInfo;
+    outboundFlightInfo: FlightInfo;
+}
+
+interface AltLeg1InboundParams {
+    label: typeof LABELS.ALT_LEG1_INBOUND;
+    searchInfo: AlternativeRouteSearchInfo;
+    outboundFlightInfo: FlightInfo;
+}
+
+// Alternative route leg2 outbound (requires leg1FlightInfo)
+interface AltLeg2OutboundParams {
+    label: typeof LABELS.ALT_LEG2_OUTBOUND;
+    searchInfo: AlternativeRouteSearchInfo;
+    leg1FlightInfo: FlightInfo;
+}
+
+// Alternative route leg2 inbound (requires both outboundFlightInfo and leg1FlightInfo)
+interface AltLeg2InboundParams {
+    label: typeof LABELS.ALT_LEG2_INBOUND;
+    searchInfo: AlternativeRouteSearchInfo;
+    outboundFlightInfo: FlightInfo;
+    leg1FlightInfo: FlightInfo;
+}
+
+/**
+ * Union type for all possible request parameter combinations
+ * TypeScript will enforce that the correct parameters are provided for each label
+ */
+export type CreateRequestParams =
+    | DirectOutboundParams
+    | DirectInboundParams
+    | AltLeg1OutboundParams
+    | AltLeg1InboundParams
+    | AltLeg2OutboundParams
+    | AltLeg2InboundParams;
 
 /**
  * Universal factory function to create any route request
  * Determines URL and userData structure based on label
  */
 export function createRequest(params: CreateRequestParams) {
-    const { label, searchInfo, outboundFlightInfo, leg1FlightInfo } = params;
+    const { label, searchInfo } = params;
 
     // Determine which cities and whether we need productId/policyId
     let departureCityCode: string;
@@ -88,52 +129,41 @@ export function createRequest(params: CreateRequestParams) {
             // PRG -> TPE (inbound, needs flight from outbound)
             departureCityCode = searchInfo.departureCityCode;
             targetCityCode = searchInfo.targetCityCode;
-            productId = outboundFlightInfo?.productId;
-            policyId = outboundFlightInfo?.policyId;
+            productId = params.outboundFlightInfo.productId;
+            policyId = params.outboundFlightInfo.policyId;
             break;
 
         case LABELS.ALT_LEG1_OUTBOUND:
             // TPE -> HKG (leg1 outbound to intermediate)
-            if (!('intermediateCityCode' in searchInfo)) {
-                throw new Error('intermediateCityCode required for ALT_LEG1_OUTBOUND');
-            }
             departureCityCode = searchInfo.departureCityCode;
             targetCityCode = searchInfo.intermediateCityCode;
             break;
 
         case LABELS.ALT_LEG1_INBOUND:
             // HKG -> TPE (leg1 inbound from intermediate)
-            if (!('intermediateCityCode' in searchInfo)) {
-                throw new Error('intermediateCityCode required for ALT_LEG1_INBOUND');
-            }
             departureCityCode = searchInfo.departureCityCode;
             targetCityCode = searchInfo.intermediateCityCode;
-            productId = outboundFlightInfo?.productId;
-            policyId = outboundFlightInfo?.policyId;
+            productId = params.outboundFlightInfo.productId;
+            policyId = params.outboundFlightInfo.policyId;
             break;
 
         case LABELS.ALT_LEG2_OUTBOUND:
             // HKG -> PRG (leg2 outbound from intermediate to target)
-            if (!('intermediateCityCode' in searchInfo)) {
-                throw new Error('intermediateCityCode required for ALT_LEG2_OUTBOUND');
-            }
             departureCityCode = searchInfo.intermediateCityCode;
             targetCityCode = searchInfo.targetCityCode;
             break;
 
         case LABELS.ALT_LEG2_INBOUND:
             // PRG -> HKG (leg2 inbound from target to intermediate)
-            if (!('intermediateCityCode' in searchInfo)) {
-                throw new Error('intermediateCityCode required for ALT_LEG2_INBOUND');
-            }
             departureCityCode = searchInfo.intermediateCityCode;
             targetCityCode = searchInfo.targetCityCode;
-            productId = outboundFlightInfo?.productId;
-            policyId = outboundFlightInfo?.policyId;
+            productId = params.outboundFlightInfo.productId;
+            policyId = params.outboundFlightInfo.policyId;
             break;
 
         default:
-            throw new Error(`Unknown label: ${label}`);
+            // TypeScript will ensure this is never reached
+            throw new Error(`Unknown label: ${label satisfies never}`);
     }
 
     // Create URL based on whether it's initial search or continuation
@@ -163,12 +193,12 @@ export function createRequest(params: CreateRequestParams) {
     // Build userData - only include what's provided
     const userData: Record<string, unknown> = { searchInfo };
 
-    if (outboundFlightInfo) {
-        userData.outboundFlightInfo = outboundFlightInfo;
+    if ('outboundFlightInfo' in params) {
+        userData.outboundFlightInfo = params.outboundFlightInfo;
     }
 
-    if (leg1FlightInfo) {
-        userData.leg1FLightInfo = leg1FlightInfo;
+    if ('leg1FlightInfo' in params) {
+        userData.leg1FLightInfo = params.leg1FlightInfo;
     }
 
     return { url, label, userData };
