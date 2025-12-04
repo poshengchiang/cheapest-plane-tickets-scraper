@@ -130,11 +130,15 @@ router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page }) => {
         combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo),
     );
 
+    const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
+
     await Promise.all(
         combineFlightInfoList.map(async (combinedFlightInfo: FlightInfo) => {
             const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
             return Dataset.pushData({
                 pattern: PATTERN.ALTERNATIVE_ROUTE,
+                intermediateCityCode: searchInfo.intermediateCityCode,
+                intermediateCityName: leg1FlightInfo.targetCityName,
                 flightInfo: finalCombinedFlightInfo,
             });
         }),

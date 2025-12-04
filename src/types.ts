@@ -87,6 +87,9 @@ export interface RouteResult {
         outboundDate: string; // Actual selected date
         inboundDate: string; // Actual selected date
     };
+    // Only for ALTERNATIVE_ROUTE pattern
+    intermediateCityCode?: string;
+    intermediateCityName?: string;
 }
 
 /**
