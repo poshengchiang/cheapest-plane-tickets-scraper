@@ -4,43 +4,38 @@
     "schemaVersion": 1,
     "properties": {
         "mainDepartureCity": {
-            "title": "Main Departure City (MDC)",
+            "title": "Main Departure City Code (MDC)",
             "type": "string",
-            "description": "Primary departure city/airport code",
-            "editor": "select",
-            "enum": ["TPE", "PRG", "TYO"],
-            "enumTitles": ["Taipei (TPE)", "Prague (PRG)", "Tokyo (TYO)"],
-            "default": "TPE"
+            "description": "IATA airport code (3 letters, e.g., TPE for Taipei)",
+            "editor": "textfield",
+            "default": "TPE",
+            "pattern": "^[A-Z]{3}$",
+            "minLength": 3,
+            "maxLength": 3
         },
         "targetCity": {
-            "title": "Target City (TC)",
+            "title": "Target City Code (TC)",
             "type": "string",
-            "description": "Primary departure city/airport code",
-            "editor": "select",
-            "enum": ["TPE", "PRG", "TYO", "BKK"],
-            "enumTitles": ["Taipei (TPE)", "Prague (PRG)", "Tokyo (TYO)", "Bangkok (BKK)"],
-            "default": "PRG"
+            "description": "IATA airport code (3 letters, e.g., PRG for Prague)",
+            "editor": "textfield",
+            "default": "PRG",
+            "pattern": "^[A-Z]{3}$",
+            "minLength": 3,
+            "maxLength": 3
         },
         "alternativeDepartureCities": {
-            "title": "Alternative Departure Cities (ADC)",
+            "title": "Alternative Departure Cities (Intermediate Stops)",
             "type": "array",
-            "description": "Intermediate cities to check for cheaper routes via multi-leg flights",
-            "editor": "select",
+            "description": "List of IATA airport codes to check as intermediate stops for cheaper routes",
+            "editor": "stringList",
+            "default": ["HKG"],
+            "prefill": ["HKG"],
+            "placeholderValue": "3-letter code (e.g., HKG)",
             "items": {
                 "type": "string",
-                "enum": ["HKG", "ICN", "SIN", "BKK", "KUL", "MNL"],
-                "enumTitles": [
-                    "Hong Kong (HKG)",
-                    "Seoul (ICN)",
-                    "Singapore (SIN)",
-                    "Bangkok (BKK)",
-                    "Kuala Lumpur (KUL)",
-                    "Manila (MNL)"
-                ]
+                "pattern": "^[A-Z]{3}$"
             },
-            "uniqueItems": true,
-            "default": [],
-            "prefill": ["HKG", "ICN"]
+            "uniqueItems": true
         },
         "cabinClass": {
             "title": "Cabin Class",
