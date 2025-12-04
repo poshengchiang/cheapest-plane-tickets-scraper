@@ -36,6 +36,7 @@ router.addHandler(LABELS.DIRECT_OUTBOUND, async ({ request, page, crawler }) => 
 router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page }) => {
     const inboundFlightInfoList = await getAndValidateFlightData(request, page, 'inboundFlightInfoList');
     const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
+    const searchInfo = validateUserData<DirectRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
     await Promise.all(
@@ -43,6 +44,13 @@ router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page }) => {
             const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
             return Dataset.pushData({
                 pattern: PATTERN.DIRECT_ROUTE,
+                totalPrice: combinedFlightInfo.totalPrice,
+                mainDepartureCity: combinedFlightInfo.departureCityCode,
+                intermediateCity: null,
+                targetCity: combinedFlightInfo.targetCityCode,
+                departureDate: searchInfo.departureDate,
+                returnDate: searchInfo.returnDate,
+                totalTimeMinutes: combinedFlightInfo.totalTimeMinutes,
                 flightInfo: combinedFlightInfo,
             });
         }),
@@ -137,8 +145,13 @@ router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page }) => {
             const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
             return Dataset.pushData({
                 pattern: PATTERN.ALTERNATIVE_ROUTE,
-                intermediateCityCode: searchInfo.intermediateCityCode,
-                intermediateCityName: leg1FlightInfo.targetCityName,
+                totalPrice: finalCombinedFlightInfo.totalPrice,
+                mainDepartureCity: finalCombinedFlightInfo.departureCityCode,
+                intermediateCity: searchInfo.intermediateCityCode,
+                targetCity: finalCombinedFlightInfo.targetCityCode,
+                departureDate: searchInfo.departureDate,
+                returnDate: searchInfo.returnDate,
+                totalTimeMinutes: finalCombinedFlightInfo.totalTimeMinutes,
                 flightInfo: finalCombinedFlightInfo,
             });
         }),

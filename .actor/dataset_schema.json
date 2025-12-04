@@ -7,12 +7,13 @@
             "transformation": {
                 "fields": [
                     "pattern",
-                    "flightInfo.totalPrice",
-                    "flightInfo.departureCityName",
-                    "flightInfo.targetCityName",
-                    "intermediateCityName",
-                    "flightInfo.totalTimeMinutes",
-                    "flightInfo.totalFlights"
+                    "totalPrice",
+                    "mainDepartureCity",
+                    "intermediateCity",
+                    "targetCity",
+                    "departureDate",
+                    "returnDate",
+                    "totalTimeMinutes"
                 ]
             },
             "display": {
@@ -22,56 +23,33 @@
                         "label": "Route Type",
                         "format": "text"
                     },
-                    "flightInfo.totalPrice": {
-                        "label": "Total Price (TWD)",
+                    "totalPrice": {
+                        "label": "Price (TWD)",
                         "format": "number"
                     },
-                    "flightInfo.departureCityName": {
+                    "mainDepartureCity": {
                         "label": "From",
                         "format": "text"
                     },
-                    "flightInfo.targetCityName": {
+                    "intermediateCity": {
+                        "label": "Via",
+                        "format": "text"
+                    },
+                    "targetCity": {
                         "label": "To",
                         "format": "text"
                     },
-                    "intermediateCityName": {
-                        "label": "Via (Intermediate)",
+                    "departureDate": {
+                        "label": "Departure",
                         "format": "text"
                     },
-                    "flightInfo.totalTimeMinutes": {
-                        "label": "Total Time (min)",
+                    "returnDate": {
+                        "label": "Return",
+                        "format": "text"
+                    },
+                    "totalTimeMinutes": {
+                        "label": "Time (min)",
                         "format": "number"
-                    },
-                    "flightInfo.totalFlights": {
-                        "label": "# of Flights",
-                        "format": "number"
-                    }
-                }
-            }
-        },
-        "detailed": {
-            "title": "Detailed Flight Info",
-            "transformation": {
-                "fields": ["pattern", "intermediateCityCode", "intermediateCityName", "flightInfo"]
-            },
-            "display": {
-                "component": "table",
-                "properties": {
-                    "pattern": {
-                        "label": "Route Type",
-                        "format": "text"
-                    },
-                    "intermediateCityCode": {
-                        "label": "Intermediate City Code",
-                        "format": "text"
-                    },
-                    "intermediateCityName": {
-                        "label": "Intermediate City Name",
-                        "format": "text"
-                    },
-                    "flightInfo": {
-                        "label": "Flight Details",
-                        "format": "object"
                     }
                 }
             }

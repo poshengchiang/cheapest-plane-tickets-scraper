@@ -7,11 +7,6 @@
             "title": "Flight Results (Overview)",
             "template": "{{links.apiDefaultDatasetUrl}}/items?view=overview"
         },
-        "detailedResults": {
-            "type": "string",
-            "title": "Detailed Flight Info",
-            "template": "{{links.apiDefaultDatasetUrl}}/items?view=detailed"
-        },
         "allData": {
             "type": "string",
             "title": "Complete Dataset (JSON)",

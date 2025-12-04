@@ -82,14 +82,14 @@ export interface FlightInfo {
 
 export interface RouteResult {
     pattern: PATTERN;
+    totalPrice: number;
+    mainDepartureCity: string;
+    intermediateCity: string | null;
+    targetCity: string;
+    departureDate: string;
+    returnDate: string;
+    totalTimeMinutes: number;
     flightInfo: FlightInfo;
-    timePeriod: {
-        outboundDate: string; // Actual selected date
-        inboundDate: string; // Actual selected date
-    };
-    // Only for ALTERNATIVE_ROUTE pattern
-    intermediateCityCode?: string;
-    intermediateCityName?: string;
 }
 
 /**

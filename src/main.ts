@@ -120,14 +120,9 @@ const dataset = await Actor.openDataset();
 const { items } = await dataset.getData();
 log.info(`Crawler finished. Total items saved to dataset: ${items.length}`);
 
-const sortedItems = items.sort((a, b) => {
-    return a.flightInfo.totalPrice - b.flightInfo.totalPrice;
-});
-
-await dataset.drop();
-
-const sortedDataset = await Actor.openDataset();
-await sortedDataset.pushData(sortedItems);
+// Note: Items are already sorted by price in the dataset view (see dataset_schema.json)
+// No need to re-sort here as Apify Console can sort the view
+log.info(`Cheapest flight: ${items.length > 0 ? items[0].flightInfo.totalPrice : 'N/A'} TWD`);
 
 // Exit successfully
 await Actor.exit();
