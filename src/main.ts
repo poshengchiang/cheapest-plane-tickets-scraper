@@ -137,15 +137,24 @@ const sortedResults = await resultsStore.getAllSorted();
 log.info(`Crawler finished. Total results collected: ${sortedResults.length}`);
 
 if (sortedResults.length === 0) {
-    log.warning('No flight results found');
-    await Actor.exit();
+    log.warning('No flight results found. Try adjusting search criteria or time periods.');
+    await Actor.exit('No flights found matching your criteria');
 }
 
 // Save sorted results to dataset
 await Dataset.pushData(sortedResults);
 
-log.info(`Saved ${sortedResults.length} sorted results to dataset`);
-log.info(`Cheapest flight: ${sortedResults[0].totalPrice} TWD (${sortedResults[0].pattern})`);
+const cheapestFlight = sortedResults[0];
+const expensiveFlight = sortedResults[sortedResults.length - 1];
+const priceRange = expensiveFlight.totalPrice - cheapestFlight.totalPrice;
 
-// Exit successfully
-await Actor.exit();
+log.info(`Saved ${sortedResults.length} sorted results to dataset`);
+log.info(`Cheapest flight: ${cheapestFlight.totalPrice} TWD (${cheapestFlight.pattern})`);
+log.info(`Price range: ${cheapestFlight.totalPrice} - ${expensiveFlight.totalPrice} TWD (Δ${priceRange} TWD)`);
+
+// Exit successfully with summary
+await Actor.exit(
+    `✅ Successfully found ${sortedResults.length} flight options! ` +
+    `Cheapest: ${cheapestFlight.totalPrice} TWD via ${cheapestFlight.pattern}. ` +
+    `Price range: ${priceRange} TWD.`
+);
