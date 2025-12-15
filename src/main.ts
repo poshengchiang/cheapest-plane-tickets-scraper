@@ -60,7 +60,6 @@ if (maxFlightsPerSearch) {
 
 const proxyConfiguration = await Actor.createProxyConfiguration({
     groups: ['RESIDENTIAL'],
-    countryCode: 'TW',
 });
 
 const crawler = new PlaywrightCrawler({
