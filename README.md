@@ -1,19 +1,16 @@
 # Cheapest Plane Tickets Scraper
 
-Find the cheapest flights on Trip.com by comparing direct routes and creative multi-city combinations.
+> **For users**: See [.actor/README.md](.actor/README.md) for usage instructions on Apify platform.
 
-## 🎯 What It Does
-
-Discovers cheap flights using two strategies:
-
-- **Direct Routes**: TPE → PRG (standard round-trip)
-- **Alternative Routes**: TPE → HKG → PRG (multi-city combinations)
-
-⚠️ **Note**: This is a price discovery tool. Alternative routes may have timing conflicts—verify manually on Trip.com before booking.
+Developer documentation for the Cheapest Plane Tickets Scraper Actor. This Actor scrapes Trip.com to find cheap flight combinations by comparing direct routes and multi-city alternatives.
 
 ## 🚀 Quick Start
 
 ```bash
+# Clone repository
+git clone https://github.com/poshengchiang/cheapest-plane-tickets-scraper.git
+cd cheapest-plane-tickets-scraper
+
 # Install dependencies
 npm install
 
@@ -25,54 +22,74 @@ apify login
 apify push
 ```
 
-## 📥 Input
+## 🏗️ Architecture
 
-**Required:**
+### Request Flow
 
-- `mainDepartureCity` - Departure airport code (e.g., `TPE`)
-- `targetCity` - Destination airport code (e.g., `PRG`)
-- `cabinClass` - `Y` (Economy), `C` (Business), `F` (First)
-- `numberOfPeople` - Passengers (1-9)
+**Direct Route (2 steps):**
 
-**Optional:**
+1. `DIRECT_OUTBOUND`: Search TPE → PRG (select top 3)
+2. `DIRECT_INBOUND`: For each outbound, search PRG → TPE
 
-- `timePeriods` - Travel dates (defaults to 30 days from now)
-- `alternativeDepartureCities` - Intermediate cities (e.g., `["HKG", "ICN"]`)
-- `airlines` - Filter by airlines
-- `maxRequestsPerCrawl` - Request limit (default: 1000)
+**Alternative Route (4 steps):**
 
-## 📊 Output
+1. `ALT_LEG1_OUTBOUND`: TPE → HKG (top 3)
+2. `ALT_LEG1_INBOUND`: HKG → PRG (best only)
+3. `ALT_LEG2_OUTBOUND`: PRG → HKG (top 3)
+4. `ALT_LEG2_INBOUND`: HKG → TPE (combine all)
 
-Dataset sorted by price (cheapest first) with:
+### Key Components
 
-- Route type (direct/alternative)
-- Total price (TWD)
-- Departure/destination/intermediate cities
-- Travel dates and duration
-- Complete flight details
+- **`src/main.ts`**: Actor entry point, initializes crawler
+- **`src/routes.ts`**: Router with 6 handlers (exports `router` and `resultsStore`)
+- **`src/utils.ts`**: Request factory with discriminated unions
+- **`src/ResultsStore.ts`**: Key-value store wrapper for results accumulation
+- **`src/hooks.ts`**: Pre-navigation hooks for SSE/JSON capture
+- **`src/types.ts`**: TypeScript type definitions
+- **`src/constants.ts`**: Labels, patterns, limits
 
-## 🔍 How It Works
+### Data Flow
 
-### Direct Route (2 steps)
+1. Route handlers scrape flight data from Trip.com
+2. Results saved to `ResultsStore` (key-value store)
+3. After crawl completion, `main.ts` retrieves and sorts all results
+4. Sorted results pushed to dataset in one batch
 
-1. Search outbound flights (TPE → PRG) - select top 3
-2. For each outbound, search inbound flights (PRG → TPE)
-3. Save all combinations
+### Performance
 
-### Alternative Route (4 steps)
+**Request Estimation:**
 
-1. **Leg 1 Out**: TPE → HKG (top 3)
-2. **Leg 1 In**: HKG → PRG (best only)
-3. **Leg 2 Out**: PRG → HKG (top 3)
-4. **Leg 2 In**: HKG → TPE (all combinations)
-5. Save complete 4-leg journeys
+For `n` time periods, `m` intermediate cities, `N=3` top flights:
 
-⚠️ Leg 1 searches same-day connections for price reference only—transfer times not validated.
+- **Direct routes**: `n × (1 + N)` = 4n requests → `n × N²` = 9n items
+- **Alternative routes**: `n × m × (2 + 2N)` = 8nm requests → `n × m × N` = 3nm items
+- **Total**: `n(4 + 8m)` requests, `n(9 + 3m)` items
 
-## 🛠️ Technical Details
+**Example**: 2 periods, 2 intermediate cities = 40 requests, 30 items (~3-5 min)
 
-- **Framework**: Crawlee + Playwright
-- **Data Source**: Trip.com Taiwan API (SSE + JSON)
-- **Storage**: Results stored in key-value store, then sorted and saved to dataset
-- **Concurrency**: 3 parallel requests
-- **Performance**: ~40 requests for 2 time periods + 2 intermediate cities
+## 📝 Configuration Files
+
+- **`.actor/input_schema.json`**: Apify Console input form definition
+- **`.actor/output_schema.json`**: Output tab configuration
+- **`.actor/dataset_schema.json`**: Dataset view with field display
+- **`.actor/actor.json`**: Actor metadata and settings
+
+## 🧪 Testing Locally
+
+```bash
+# Run with default input
+apify run
+
+# Run with custom input
+cat > storage/key_value_stores/default/INPUT.json << 'EOF'
+{
+  "mainDepartureCity": "TPE",
+  "targetCity": "HKG",
+  "cabinClass": "Y",
+  "numberOfPeople": 1,
+  "timePeriods": [{"outboundDate": "2026-02-01", "inboundDate": "2026-02-05"}],
+  "maxRequestsPerCrawl": 100
+}
+EOF
+apify run
+```
