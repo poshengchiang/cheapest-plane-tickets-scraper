@@ -36,10 +36,10 @@ const {
     targetCity,
     alternativeDepartureCities = [],
     cabinClass,
-    numberOfPeople = 1,
+    numberOfPeople,
     timePeriods,
     airlines = [],
-    maxRequestsPerCrawl = 1000,
+    maxFlightsPerSearch,
 } = input;
 
 log.info('Actor input received:', {
@@ -50,7 +50,13 @@ log.info('Actor input received:', {
     numberOfPeople,
     timePeriodsCount: timePeriods.length,
     airlinesFilter: airlines.length > 0 ? airlines : 'none',
+    maxFlightsPerSearch,
 });
+
+// Set the maximum flights limit in results store
+if (maxFlightsPerSearch) {
+    resultsStore.setMaxLimit(maxFlightsPerSearch);
+}
 
 const proxyConfiguration = await Actor.createProxyConfiguration({
     groups: ['RESIDENTIAL'],
@@ -59,10 +65,21 @@ const proxyConfiguration = await Actor.createProxyConfiguration({
 
 const crawler = new PlaywrightCrawler({
     proxyConfiguration,
-    maxRequestsPerCrawl,
     maxConcurrency: 3,
     headless: true,
-    requestHandler: router,
+    requestHandler: async (context) => {
+        // Check limit before processing any route
+        if (resultsStore.isReachLimit()) {
+            log.info('Flight limit reached, skipping request', { 
+                url: context.request.url,
+                label: context.request.label 
+            });
+            context.request.noRetry = true;
+            return;
+        }
+        // Process the route if limit not reached
+        await router(context);
+    },
     navigationTimeoutSecs: 60, // Increased for SSE responses that take longer
     preNavigationHooks: [captureSSEResponseHook, captureResponseHook],
     launchContext: {

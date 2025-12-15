@@ -20,7 +20,7 @@ export interface Input {
     targetLowestPrice?: boolean; // Sort by lowest price (default: true)
     transferTimeHours?: number; // Minimum transfer time in hours (default: 3)
     adcBufferHours?: number; // Buffer for ADC searches in hours (default: 24)
-    maxRequestsPerCrawl?: number; // Request limit (default: 1000)
+    maxFlightsPerSearch?: number; // Maximum flights to collect per search (default: 10)
 }
 
 export interface DirectRouteSearchInfo {

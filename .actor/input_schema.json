@@ -94,13 +94,13 @@
             },
             "default": []
         },
-        "maxRequestsPerCrawl": {
-            "title": "Max Requests per Crawl",
+        "maxFlightsPerSearch": {
+            "title": "Max Flights per Search",
             "type": "integer",
-            "description": "Limit total number of requests to prevent excessive API calls",
+            "description": "Maximum number of flight options to collect from each search. Higher values provide more options but increase runtime.",
             "minimum": 1,
-            "maximum": 10000,
-            "default": 1000
+            "maximum": 100,
+            "default": 10
         }
     },
     "required": ["mainDepartureCity", "targetCity", "cabinClass", "numberOfPeople", "timePeriods"]

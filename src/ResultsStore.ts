@@ -8,6 +8,25 @@ import type { RouteResult } from './types.js';
  * Provides thread-safe operations for appending and retrieving results
  */
 class ResultsStore {
+    private flightsCount = 0;
+    private maxLimit = 10;
+
+    /**
+     * Sets the maximum limit for flights to collect
+     * @param limit - Maximum number of flights
+     */
+    setMaxLimit(limit: number): void {
+        this.maxLimit = limit;
+    }
+
+    /**
+     * Checks if the flight count has reached or exceeded the limit
+     * @returns True if limit is reached, false otherwise
+     */
+    isReachLimit(): boolean {
+        return this.flightsCount >= this.maxLimit;
+    }
+
     /**
      * Appends new flight results to the store
      * @param results - Array of route results to append
@@ -15,6 +34,7 @@ class ResultsStore {
     async append(results: RouteResult[]): Promise<void> {
         const existingResults = (await Actor.getValue<RouteResult[]>(RESULTS_KEY)) || [];
         await Actor.setValue(RESULTS_KEY, [...existingResults, ...results]);
+        this.flightsCount += results.length;
     }
 
     /**
