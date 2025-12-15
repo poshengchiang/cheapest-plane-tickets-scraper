@@ -71,7 +71,6 @@ const crawler = new PlaywrightCrawler({
         // Check limit before processing any route
         if (resultsStore.isReachLimit()) {
             log.info('Flight limit reached, skipping request', { 
-                url: context.request.url,
                 label: context.request.label 
             });
             context.request.noRetry = true;
