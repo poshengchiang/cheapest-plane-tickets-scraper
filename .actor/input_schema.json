@@ -67,18 +67,24 @@
                         "type": "string",
                         "description": "Date for outbound flight search (YYYY-MM-DD)",
                         "editor": "datepicker",
-                        "default": "2026-10-06"
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                     },
                     "inboundDate": {
                         "title": "Inbound Date",
                         "type": "string",
                         "description": "Date for outbound flight search (YYYY-MM-DD)",
                         "editor": "datepicker",
-                        "default": "2026-10-14"
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                     }
                 },
                 "required": ["outboundDate", "inboundDate"]
-            }
+            },
+            "prefill": [
+                {
+                    "outboundDate": "2026-10-06",
+                    "inboundDate": "2026-10-14"
+                }
+            ]
         },
         "airlines": {
             "title": "Filter by Airlines (Optional)",
