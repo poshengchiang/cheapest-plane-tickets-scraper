@@ -3,11 +3,18 @@ import { log } from 'apify';
 import { LABELS } from './constants.js';
 import type {
     AlternativeRouteSearchInfo,
+    AltLeg1InboundUserData,
+    AltLeg1OutboundUserData,
+    AltLeg2InboundUserData,
+    AltLeg2OutboundUserData,
+    DirectInboundUserData,
+    DirectOutboundUserData,
     DirectRouteSearchInfo,
     FlightData,
     FlightInfo,
     FlightResponseData,
     FlightSection,
+    RouteUserData,
 } from './types.js';
 
 /**
@@ -151,15 +158,43 @@ export function createRequest(params: CreateRequestParams) {
                   airlines: searchInfo.airlines,
               });
 
-    // Build userData - only include what's provided
-    const userData: Record<string, unknown> = { searchInfo };
+    // Build userData with proper typing based on label
+    let userData: RouteUserData;
 
-    if ('outboundFlightInfo' in params) {
-        userData.outboundFlightInfo = params.outboundFlightInfo;
-    }
-
-    if ('leg1FlightInfo' in params) {
-        userData.leg1FlightInfo = params.leg1FlightInfo;
+    switch (label) {
+        case LABELS.DIRECT_OUTBOUND:
+            userData = { searchInfo } as DirectOutboundUserData;
+            break;
+        case LABELS.DIRECT_INBOUND:
+            userData = {
+                searchInfo,
+                outboundFlightInfo: params.outboundFlightInfo,
+            } as DirectInboundUserData;
+            break;
+        case LABELS.ALT_LEG1_OUTBOUND:
+            userData = { searchInfo } as AltLeg1OutboundUserData;
+            break;
+        case LABELS.ALT_LEG1_INBOUND:
+            userData = {
+                searchInfo,
+                outboundFlightInfo: params.outboundFlightInfo,
+            } as AltLeg1InboundUserData;
+            break;
+        case LABELS.ALT_LEG2_OUTBOUND:
+            userData = {
+                searchInfo,
+                leg1FlightInfo: params.leg1FlightInfo,
+            } as AltLeg2OutboundUserData;
+            break;
+        case LABELS.ALT_LEG2_INBOUND:
+            userData = {
+                searchInfo,
+                outboundFlightInfo: params.outboundFlightInfo,
+                leg1FlightInfo: params.leg1FlightInfo,
+            } as AltLeg2InboundUserData;
+            break;
+        default:
+            throw new Error(`Unknown label: ${label satisfies never}`);
     }
 
     return { url, label, userData };

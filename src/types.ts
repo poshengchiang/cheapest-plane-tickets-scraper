@@ -46,6 +46,60 @@ export interface AlternativeRouteSearchInfo extends DirectRouteSearchInfo {
 }
 
 /**
+ * UserData type definitions for different route stages
+ */
+
+// Base userData with promises from hooks
+interface BaseUserData {
+    sseResponsePromise?: Promise<FlightInfo[] | null>;
+    flightResponsePromise?: Promise<FlightInfo[] | null>;
+}
+
+// DIRECT_OUTBOUND userData
+export interface DirectOutboundUserData extends BaseUserData {
+    searchInfo: DirectRouteSearchInfo;
+}
+
+// DIRECT_INBOUND userData
+export interface DirectInboundUserData extends BaseUserData {
+    searchInfo: DirectRouteSearchInfo;
+    outboundFlightInfo: FlightInfo;
+}
+
+// ALT_LEG1_OUTBOUND userData
+export interface AltLeg1OutboundUserData extends BaseUserData {
+    searchInfo: AlternativeRouteSearchInfo;
+}
+
+// ALT_LEG1_INBOUND userData
+export interface AltLeg1InboundUserData extends BaseUserData {
+    searchInfo: AlternativeRouteSearchInfo;
+    outboundFlightInfo: FlightInfo;
+}
+
+// ALT_LEG2_OUTBOUND userData
+export interface AltLeg2OutboundUserData extends BaseUserData {
+    searchInfo: AlternativeRouteSearchInfo;
+    leg1FlightInfo: FlightInfo;
+}
+
+// ALT_LEG2_INBOUND userData
+export interface AltLeg2InboundUserData extends BaseUserData {
+    searchInfo: AlternativeRouteSearchInfo;
+    outboundFlightInfo: FlightInfo;
+    leg1FlightInfo: FlightInfo;
+}
+
+// Union type for all userData types
+export type RouteUserData =
+    | DirectOutboundUserData
+    | DirectInboundUserData
+    | AltLeg1OutboundUserData
+    | AltLeg1InboundUserData
+    | AltLeg2OutboundUserData
+    | AltLeg2InboundUserData;
+
+/**
  * Flight segment information
  */
 export interface FlightSegment {

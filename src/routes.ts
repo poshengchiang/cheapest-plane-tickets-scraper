@@ -1,9 +1,17 @@
 import { createPlaywrightRouter } from 'crawlee';
 
 import { LABELS, PATTERN, TOP_FLIGHTS_TO_COLLECT_LIMIT } from './constants.js';
-import { getAndValidateFlightData, validateUserData } from './helpers.js';
+import { getAndValidateFlightData } from './helpers.js';
 import { resultsStore } from './ResultsStore.js';
-import type { AlternativeRouteSearchInfo, DirectRouteSearchInfo, FlightInfo } from './types.js';
+import type {
+    AltLeg1InboundUserData,
+    AltLeg1OutboundUserData,
+    AltLeg2InboundUserData,
+    AltLeg2OutboundUserData,
+    DirectInboundUserData,
+    DirectOutboundUserData,
+    FlightInfo,
+} from './types.js';
 import { combineAlternativeRouteFlightInfo, combineOutboundInboundFlightInfo, createRequest } from './utils.js';
 
 export const router = createPlaywrightRouter();
@@ -13,10 +21,10 @@ export const router = createPlaywrightRouter();
  * Searches for outbound flights from departure to target city
  * Queues top N flights for inbound search
  */
-router.addHandler(LABELS.DIRECT_OUTBOUND, async ({request, crawler}) => {
+router.addHandler<DirectOutboundUserData>(LABELS.DIRECT_OUTBOUND, async ({ request, crawler }) => {
+    const { searchInfo } = request.userData;
     const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
-    const searchInfo = validateUserData<DirectRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
 
     const requests = topFlightInfos.map((flightInfo) =>
         createRequest({
@@ -34,10 +42,9 @@ router.addHandler(LABELS.DIRECT_OUTBOUND, async ({request, crawler}) => {
  * Searches for return flights from target back to departure city
  * Combines with outbound flight and saves to dataset
  */
-router.addHandler(LABELS.DIRECT_INBOUND, async ({request}) => {
+router.addHandler<DirectInboundUserData>(LABELS.DIRECT_INBOUND, async ({ request }) => {
+    const { outboundFlightInfo, searchInfo } = request.userData;
     const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
-    const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
-    const searchInfo = validateUserData<DirectRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
     const results = topFlightInfos.map((inboundFlightInfo) => {
@@ -63,10 +70,10 @@ router.addHandler(LABELS.DIRECT_INBOUND, async ({request}) => {
  * Searches for outbound flights from departure to intermediate city
  * Queues top N flights for leg 1 inbound search
  */
-router.addHandler(LABELS.ALT_LEG1_OUTBOUND, async ({request, crawler}) => {
+router.addHandler<AltLeg1OutboundUserData>(LABELS.ALT_LEG1_OUTBOUND, async ({ request, crawler }) => {
+    const { searchInfo } = request.userData;
     const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
-    const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
 
     const requests = topFlightInfos.map((flightInfo) =>
         createRequest({
@@ -84,10 +91,9 @@ router.addHandler(LABELS.ALT_LEG1_OUTBOUND, async ({request, crawler}) => {
  * Searches for flights from intermediate to target city
  * Combines leg 1 outbound + inbound and queues for leg 2 outbound
  */
-router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({request, crawler}) => {
+router.addHandler<AltLeg1InboundUserData>(LABELS.ALT_LEG1_INBOUND, async ({ request, crawler }) => {
+    const { outboundFlightInfo, searchInfo } = request.userData;
     const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
-    const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
-    const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
     const topFlightInfo = inboundFlightInfoList[0];
 
     const leg1FlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, topFlightInfo);
@@ -106,11 +112,10 @@ router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({request, crawler}) => {
  * Searches for return flights from target to intermediate city
  * Queues top N flights for leg 2 inbound search
  */
-router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({request, crawler}) => {
+router.addHandler<AltLeg2OutboundUserData>(LABELS.ALT_LEG2_OUTBOUND, async ({ request, crawler }) => {
+    const { searchInfo, leg1FlightInfo } = request.userData;
     const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
-    const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
-    const leg1FlightInfo = validateUserData<FlightInfo>(request.userData.leg1FlightInfo, 'leg1FlightInfo');
 
     const requests = topFlightInfos.map((flightInfo) =>
         createRequest({
@@ -129,17 +134,14 @@ router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({request, crawler}) => {
  * Searches for final leg from intermediate back to departure city
  * Combines all 4 legs and saves complete alternative route to dataset
  */
-router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({request}) => {
+router.addHandler<AltLeg2InboundUserData>(LABELS.ALT_LEG2_INBOUND, async ({ request }) => {
+    const { outboundFlightInfo, leg1FlightInfo, searchInfo } = request.userData;
     const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
-    const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
-    const leg1FlightInfo = validateUserData<FlightInfo>(request.userData.leg1FlightInfo, 'leg1FlightInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
 
     const combineFlightInfoList = topFlightInfos.map((inboundFlightInfo: FlightInfo) =>
         combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo),
     );
-
-    const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
 
     const results = combineFlightInfoList.map((combinedFlightInfo: FlightInfo) => {
         const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
