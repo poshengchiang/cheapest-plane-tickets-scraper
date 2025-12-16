@@ -58,7 +58,7 @@
             "title": "Travel Time Periods",
             "type": "array",
             "description": "Dates for travel. Each period defines outbound and inbound dates.",
-            "editor": "json",
+            "editor": "schemaBased",
             "items": {
                 "type": "object",
                 "properties": {
@@ -66,23 +66,19 @@
                         "title": "Outbound Date",
                         "type": "string",
                         "description": "Date for outbound flight search (YYYY-MM-DD)",
-                        "editor": "textfield"
+                        "editor": "datepicker",
+                        "default": "2026-10-06"
                     },
                     "inboundDate": {
-                        "title": "Outbound Date",
+                        "title": "Inbound Date",
                         "type": "string",
                         "description": "Date for outbound flight search (YYYY-MM-DD)",
-                        "editor": "textfield"
+                        "editor": "datepicker",
+                        "default": "2026-10-14"
                     }
                 },
                 "required": ["outboundDate", "inboundDate"]
-            },
-            "prefill": [
-                {
-                    "outboundDate": "2026-10-06",
-                    "inboundDate": "2026-10-14"
-                }
-            ]
+            }
         },
         "airlines": {
             "title": "Filter by Airlines (Optional)",
