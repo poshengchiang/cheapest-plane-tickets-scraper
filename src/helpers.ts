@@ -2,21 +2,19 @@ import { log } from 'apify';
 import type { PlaywrightCrawlingContext } from 'crawlee';
 
 import type { FlightInfo } from './types.js';
-import { waitForUserData } from './utils.js';
 
 /**
- * Helper function to wait for and validate flight data from userData
+ * Helper function to wait for and validate flight data from request.userData promises
  */
 export async function getAndValidateFlightData(
     request: PlaywrightCrawlingContext['request'],
-    page: PlaywrightCrawlingContext['page'],
-    dataKey: string,
+    promiseKey: 'sseResponsePromise' | 'flightResponsePromise',
 ): Promise<FlightInfo[]> {
-    const flightData = await waitForUserData<FlightInfo[]>(request, page, dataKey);
+    const flightData = await request.userData[promiseKey];
 
     if (!flightData) {
-        log.error(`${dataKey} is still missing after 30 seconds.`);
-        throw new Error(`Missing ${dataKey} after 30 seconds of waiting`);
+        log.error(`${promiseKey} returned no data`);
+        throw new Error(`Missing flight data from ${promiseKey}`);
     }
 
     return flightData;

@@ -13,8 +13,8 @@ export const router = createPlaywrightRouter();
  * Searches for outbound flights from departure to target city
  * Queues top N flights for inbound search
  */
-router.addHandler(LABELS.DIRECT_OUTBOUND, async ({ request, page, crawler }) => {
-    const outboundFlightInfoList = await getAndValidateFlightData(request, page, 'outboundFlightInfoList');
+router.addHandler(LABELS.DIRECT_OUTBOUND, async ({request, crawler}) => {
+    const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
     const searchInfo = validateUserData<DirectRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
 
@@ -34,8 +34,8 @@ router.addHandler(LABELS.DIRECT_OUTBOUND, async ({ request, page, crawler }) => 
  * Searches for return flights from target back to departure city
  * Combines with outbound flight and saves to dataset
  */
-router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page }) => {
-    const inboundFlightInfoList = await getAndValidateFlightData(request, page, 'inboundFlightInfoList');
+router.addHandler(LABELS.DIRECT_INBOUND, async ({request}) => {
+    const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
     const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
     const searchInfo = validateUserData<DirectRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
@@ -63,8 +63,8 @@ router.addHandler(LABELS.DIRECT_INBOUND, async ({ request, page }) => {
  * Searches for outbound flights from departure to intermediate city
  * Queues top N flights for leg 1 inbound search
  */
-router.addHandler(LABELS.ALT_LEG1_OUTBOUND, async ({ request, page, crawler }) => {
-    const outboundFlightInfoList = await getAndValidateFlightData(request, page, 'outboundFlightInfoList');
+router.addHandler(LABELS.ALT_LEG1_OUTBOUND, async ({request, crawler}) => {
+    const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
     const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
 
@@ -84,8 +84,8 @@ router.addHandler(LABELS.ALT_LEG1_OUTBOUND, async ({ request, page, crawler }) =
  * Searches for flights from intermediate to target city
  * Combines leg 1 outbound + inbound and queues for leg 2 outbound
  */
-router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({ request, page, crawler }) => {
-    const inboundFlightInfoList = await getAndValidateFlightData(request, page, 'inboundFlightInfoList');
+router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({request, crawler}) => {
+    const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
     const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
     const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
     const topFlightInfo = inboundFlightInfoList[0];
@@ -106,8 +106,8 @@ router.addHandler(LABELS.ALT_LEG1_INBOUND, async ({ request, page, crawler }) =>
  * Searches for return flights from target to intermediate city
  * Queues top N flights for leg 2 inbound search
  */
-router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({ request, page, crawler }) => {
-    const outboundFlightInfoList = await getAndValidateFlightData(request, page, 'outboundFlightInfoList');
+router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({request, crawler}) => {
+    const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
     const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
     const searchInfo = validateUserData<AlternativeRouteSearchInfo>(request.userData.searchInfo, 'searchInfo');
     const leg1FlightInfo = validateUserData<FlightInfo>(request.userData.leg1FlightInfo, 'leg1FlightInfo');
@@ -129,8 +129,8 @@ router.addHandler(LABELS.ALT_LEG2_OUTBOUND, async ({ request, page, crawler }) =
  * Searches for final leg from intermediate back to departure city
  * Combines all 4 legs and saves complete alternative route to dataset
  */
-router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({ request, page }) => {
-    const inboundFlightInfoList = await getAndValidateFlightData(request, page, 'inboundFlightInfoList');
+router.addHandler(LABELS.ALT_LEG2_INBOUND, async ({request}) => {
+    const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
     const outboundFlightInfo = validateUserData<FlightInfo>(request.userData.outboundFlightInfo, 'outboundFlightInfo');
     const leg1FlightInfo = validateUserData<FlightInfo>(request.userData.leg1FlightInfo, 'leg1FlightInfo');
     const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);

@@ -1,5 +1,4 @@
 import { log } from 'apify';
-import type { PlaywrightCrawlingContext } from 'crawlee';
 
 import { LABELS } from './constants.js';
 import type {
@@ -10,41 +9,6 @@ import type {
     FlightResponseData,
     FlightSection,
 } from './types.js';
-
-/**
- * Wait for data to appear in request.userData with periodic checks
- * @param request - Crawlee request object
- * @param page - Playwright page object
- * @param userDataKey - Key to check in request.userData
- * @param maxWaitTime - Maximum time to wait in milliseconds (default: 30000)
- * @param checkInterval - Interval between checks in milliseconds (default: 3000)
- * @returns The data when found, or null if timeout
- */
-export async function waitForUserData<T>(
-    request: PlaywrightCrawlingContext['request'],
-    page: PlaywrightCrawlingContext['page'],
-    userDataKey: string,
-    maxWaitTime = 30000,
-    checkInterval = 3000,
-): Promise<T | null> {
-    let data = request.userData[userDataKey] as T | undefined;
-
-    if (!data) {
-        const maxAttempts = maxWaitTime / checkInterval;
-
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            await page.waitForTimeout(checkInterval);
-            data = request.userData[userDataKey] as T | undefined;
-
-            if (data) {
-                log.info(`${userDataKey} found after ${(attempt * checkInterval) / 1000} seconds`);
-                return data;
-            }
-        }
-    }
-
-    return data ?? null;
-}
 
 /**
  * Type-safe parameters for creating requests with label-specific requirements
