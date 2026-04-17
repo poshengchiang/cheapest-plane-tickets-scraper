@@ -66,25 +66,25 @@ export interface DirectInboundUserData extends BaseUserData {
     outboundFlightInfo: FlightInfo;
 }
 
-// ALT_LEG1_OUTBOUND userData
-export interface AltLeg1OutboundUserData extends BaseUserData {
+// ALT_OUTBOUND_LEG1 userData
+export interface AltOutboundLeg1UserData extends BaseUserData {
     searchInfo: AlternativeRouteSearchInfo;
 }
 
-// ALT_LEG1_INBOUND userData
-export interface AltLeg1InboundUserData extends BaseUserData {
+// ALT_OUTBOUND_LEG2 userData
+export interface AltOutboundLeg2UserData extends BaseUserData {
     searchInfo: AlternativeRouteSearchInfo;
     outboundFlightInfo: FlightInfo;
 }
 
-// ALT_LEG2_OUTBOUND userData
-export interface AltLeg2OutboundUserData extends BaseUserData {
+// ALT_INBOUND_LEG1 userData
+export interface AltInboundLeg1UserData extends BaseUserData {
     searchInfo: AlternativeRouteSearchInfo;
     leg1FlightInfo: FlightInfo;
 }
 
-// ALT_LEG2_INBOUND userData
-export interface AltLeg2InboundUserData extends BaseUserData {
+// ALT_INBOUND_LEG2 userData
+export interface AltInboundLeg2UserData extends BaseUserData {
     searchInfo: AlternativeRouteSearchInfo;
     outboundFlightInfo: FlightInfo;
     leg1FlightInfo: FlightInfo;
@@ -94,10 +94,10 @@ export interface AltLeg2InboundUserData extends BaseUserData {
 export type RouteUserData =
     | DirectOutboundUserData
     | DirectInboundUserData
-    | AltLeg1OutboundUserData
-    | AltLeg1InboundUserData
-    | AltLeg2OutboundUserData
-    | AltLeg2InboundUserData;
+    | AltOutboundLeg1UserData
+    | AltOutboundLeg2UserData
+    | AltInboundLeg1UserData
+    | AltInboundLeg2UserData;
 
 /**
  * Flight segment information

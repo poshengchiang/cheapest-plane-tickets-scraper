@@ -11,8 +11,8 @@ import { extractFlightData } from './utils.js';
 export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
     if (
         request.label !== LABELS.DIRECT_OUTBOUND &&
-        request.label !== LABELS.ALT_LEG1_OUTBOUND &&
-        request.label !== LABELS.ALT_LEG2_OUTBOUND
+        request.label !== LABELS.ALT_OUTBOUND_LEG1 &&
+        request.label !== LABELS.ALT_INBOUND_LEG1
     ) {
         return;
     }
@@ -72,8 +72,8 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
 export const captureResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
     if (
         request.label !== LABELS.DIRECT_INBOUND &&
-        request.label !== LABELS.ALT_LEG2_INBOUND &&
-        request.label !== LABELS.ALT_LEG1_INBOUND
+        request.label !== LABELS.ALT_OUTBOUND_LEG2 &&
+        request.label !== LABELS.ALT_INBOUND_LEG2
     ) {
         return;
     }

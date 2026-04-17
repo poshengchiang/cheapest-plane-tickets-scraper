@@ -114,7 +114,7 @@ timePeriods.forEach((period) => {
     alternativeDepartureCities.forEach((intermediateCity: string) => {
         startUrls.push(
             createRequest({
-                label: LABELS.ALT_LEG1_OUTBOUND,
+                label: LABELS.ALT_OUTBOUND_LEG1,
                 searchInfo: {
                     departureCityCode: mainDepartureCity,
                     intermediateCityCode: intermediateCity,

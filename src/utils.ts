@@ -3,10 +3,10 @@ import { log } from 'apify';
 import { LABELS } from './constants.js';
 import type {
     AlternativeRouteSearchInfo,
-    AltLeg1InboundUserData,
-    AltLeg1OutboundUserData,
-    AltLeg2InboundUserData,
-    AltLeg2OutboundUserData,
+    AltInboundLeg1UserData,
+    AltInboundLeg2UserData,
+    AltOutboundLeg1UserData,
+    AltOutboundLeg2UserData,
     DirectInboundUserData,
     DirectOutboundUserData,
     DirectRouteSearchInfo,
@@ -28,8 +28,8 @@ interface DirectOutboundParams {
     searchInfo: DirectRouteSearchInfo;
 }
 
-interface AltLeg1OutboundParams {
-    label: typeof LABELS.ALT_LEG1_OUTBOUND;
+interface AltOutboundLeg1Params {
+    label: typeof LABELS.ALT_OUTBOUND_LEG1;
     searchInfo: AlternativeRouteSearchInfo;
 }
 
@@ -40,22 +40,22 @@ interface DirectInboundParams {
     outboundFlightInfo: FlightInfo;
 }
 
-interface AltLeg1InboundParams {
-    label: typeof LABELS.ALT_LEG1_INBOUND;
+interface AltOutboundLeg2Params {
+    label: typeof LABELS.ALT_OUTBOUND_LEG2;
     searchInfo: AlternativeRouteSearchInfo;
     outboundFlightInfo: FlightInfo;
 }
 
-// Alternative route leg2 outbound (requires leg1FlightInfo)
-interface AltLeg2OutboundParams {
-    label: typeof LABELS.ALT_LEG2_OUTBOUND;
+// Alternative route inbound leg1 (requires leg1FlightInfo)
+interface AltInboundLeg1Params {
+    label: typeof LABELS.ALT_INBOUND_LEG1;
     searchInfo: AlternativeRouteSearchInfo;
     leg1FlightInfo: FlightInfo;
 }
 
-// Alternative route leg2 inbound (requires both outboundFlightInfo and leg1FlightInfo)
-interface AltLeg2InboundParams {
-    label: typeof LABELS.ALT_LEG2_INBOUND;
+// Alternative route inbound leg2 (requires both outboundFlightInfo and leg1FlightInfo)
+interface AltInboundLeg2Params {
+    label: typeof LABELS.ALT_INBOUND_LEG2;
     searchInfo: AlternativeRouteSearchInfo;
     outboundFlightInfo: FlightInfo;
     leg1FlightInfo: FlightInfo;
@@ -68,10 +68,10 @@ interface AltLeg2InboundParams {
 export type CreateRequestParams =
     | DirectOutboundParams
     | DirectInboundParams
-    | AltLeg1OutboundParams
-    | AltLeg1InboundParams
-    | AltLeg2OutboundParams
-    | AltLeg2InboundParams;
+    | AltOutboundLeg1Params
+    | AltOutboundLeg2Params
+    | AltInboundLeg1Params
+    | AltInboundLeg2Params;
 
 /**
  * Universal factory function to create any route request
@@ -101,28 +101,28 @@ export function createRequest(params: CreateRequestParams) {
             policyId = params.outboundFlightInfo.policyId;
             break;
 
-        case LABELS.ALT_LEG1_OUTBOUND:
-            // TPE -> HKG (leg1 outbound to intermediate)
+        case LABELS.ALT_OUTBOUND_LEG1:
+            // TPE -> HKG (outbound leg1 to intermediate)
             departureCityCode = searchInfo.departureCityCode;
             targetCityCode = searchInfo.intermediateCityCode;
             break;
 
-        case LABELS.ALT_LEG1_INBOUND:
-            // HKG -> TPE (leg1 inbound from intermediate)
+        case LABELS.ALT_OUTBOUND_LEG2:
+            // HKG -> PRG (outbound leg2 from intermediate to target)
             departureCityCode = searchInfo.departureCityCode;
             targetCityCode = searchInfo.intermediateCityCode;
             productId = params.outboundFlightInfo.productId;
             policyId = params.outboundFlightInfo.policyId;
             break;
 
-        case LABELS.ALT_LEG2_OUTBOUND:
-            // HKG -> PRG (leg2 outbound from intermediate to target)
+        case LABELS.ALT_INBOUND_LEG1:
+            // PRG -> HKG (inbound leg1 from target to intermediate)
             departureCityCode = searchInfo.intermediateCityCode;
             targetCityCode = searchInfo.targetCityCode;
             break;
 
-        case LABELS.ALT_LEG2_INBOUND:
-            // PRG -> HKG (leg2 inbound from target to intermediate)
+        case LABELS.ALT_INBOUND_LEG2:
+            // HKG -> TPE (inbound leg2 from intermediate to departure)
             departureCityCode = searchInfo.intermediateCityCode;
             targetCityCode = searchInfo.targetCityCode;
             productId = params.outboundFlightInfo.productId;
@@ -171,27 +171,27 @@ export function createRequest(params: CreateRequestParams) {
                 outboundFlightInfo: params.outboundFlightInfo,
             } as DirectInboundUserData;
             break;
-        case LABELS.ALT_LEG1_OUTBOUND:
-            userData = { searchInfo } as AltLeg1OutboundUserData;
+        case LABELS.ALT_OUTBOUND_LEG1:
+            userData = { searchInfo } as AltOutboundLeg1UserData;
             break;
-        case LABELS.ALT_LEG1_INBOUND:
+        case LABELS.ALT_OUTBOUND_LEG2:
             userData = {
                 searchInfo,
                 outboundFlightInfo: params.outboundFlightInfo,
-            } as AltLeg1InboundUserData;
+            } as AltOutboundLeg2UserData;
             break;
-        case LABELS.ALT_LEG2_OUTBOUND:
+        case LABELS.ALT_INBOUND_LEG1:
             userData = {
                 searchInfo,
                 leg1FlightInfo: params.leg1FlightInfo,
-            } as AltLeg2OutboundUserData;
+            } as AltInboundLeg1UserData;
             break;
-        case LABELS.ALT_LEG2_INBOUND:
+        case LABELS.ALT_INBOUND_LEG2:
             userData = {
                 searchInfo,
                 outboundFlightInfo: params.outboundFlightInfo,
                 leg1FlightInfo: params.leg1FlightInfo,
-            } as AltLeg2InboundUserData;
+            } as AltInboundLeg2UserData;
             break;
         default:
             throw new Error(`Unknown label: ${label satisfies never}`);
