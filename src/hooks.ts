@@ -10,9 +10,7 @@ import { extractFlightData } from './utils.js';
  */
 export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
     if (
-        request.label !== LABELS.DIRECT_OUTBOUND &&
-        request.label !== LABELS.ALT_OUTBOUND_LEG1 &&
-        request.label !== LABELS.ALT_INBOUND_LEG1
+        request.label !== LABELS.SEARCH_OUTBOUND
     ) {
         return;
     }
@@ -71,9 +69,7 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
  */
 export const captureResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
     if (
-        request.label !== LABELS.DIRECT_INBOUND &&
-        request.label !== LABELS.ALT_OUTBOUND_LEG2 &&
-        request.label !== LABELS.ALT_INBOUND_LEG2
+        request.label !== LABELS.SEARCH_INBOUND
     ) {
         return;
     }

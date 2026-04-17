@@ -1,162 +1,87 @@
 import { createPlaywrightRouter } from 'crawlee';
 
-import { LABELS, PATTERN, TOP_FLIGHTS_TO_COLLECT_LIMIT } from './constants.js';
+import { LABELS, PATTERN } from './constants.js';
 import { getAndValidateFlightData } from './helpers.js';
+import { PIPELINES } from './pipeline.js';
 import { resultsStore } from './ResultsStore.js';
-import type {
-    AltInboundLeg1UserData,
-    AltInboundLeg2UserData,
-    AltOutboundLeg1UserData,
-    AltOutboundLeg2UserData,
-    DirectInboundUserData,
-    DirectOutboundUserData,
-    FlightInfo,
-} from './types.js';
-import { combineAlternativeRouteFlightInfo, combineOutboundInboundFlightInfo, createRequest } from './utils.js';
+import type { AlternativeRouteSearchInfo, PipelineUserData } from './types.js';
+import { combineAlternativeRouteFlightInfo, combineOutboundInboundFlightInfo, createPipelineRequest } from './utils.js';
 
 export const router = createPlaywrightRouter();
 
-/**
- * Direct Route: Step 1/2 - Outbound Flight Search
- * Searches for outbound flights from departure to target city
- * Queues top N flights for inbound search
- */
-router.addHandler<DirectOutboundUserData>(LABELS.DIRECT_OUTBOUND, async ({ request, crawler }) => {
-    const { searchInfo } = request.userData;
-    const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
-    const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
+router.addHandler<PipelineUserData>(LABELS.SEARCH_OUTBOUND, async ({ request, crawler }) => {
+    const { pipelineName, stepIndex, searchInfo, combinedFlight } = request.userData;
+    const step = PIPELINES[pipelineName][stepIndex];
 
-    const requests = topFlightInfos.map((flightInfo) =>
-        createRequest({
-            label: LABELS.DIRECT_INBOUND,
+    const flights = await getAndValidateFlightData(request, 'sseResponsePromise');
+
+    const nextRequests = flights.slice(0, step.fanOut).map((flight) =>
+        createPipelineRequest({
+            pipelineName,
+            stepIndex: stepIndex + 1,
             searchInfo,
-            outboundFlightInfo: flightInfo,
+            lastFlight: flight,
+            combinedFlight,
         }),
     );
 
-    await crawler.addRequests(requests);
+    await crawler.addRequests(nextRequests);
 });
 
-/**
- * Direct Route: Step 2/2 - Inbound Flight Search
- * Searches for return flights from target back to departure city
- * Combines with outbound flight and saves to dataset
- */
-router.addHandler<DirectInboundUserData>(LABELS.DIRECT_INBOUND, async ({ request }) => {
-    const { outboundFlightInfo, searchInfo } = request.userData;
-    const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
-    const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
+router.addHandler<PipelineUserData>(LABELS.SEARCH_INBOUND, async ({ request, crawler }) => {
+    const { pipelineName, stepIndex, searchInfo, lastFlight, combinedFlight } = request.userData;
+    const step = PIPELINES[pipelineName][stepIndex];
 
-    const results = topFlightInfos.map((inboundFlightInfo) => {
-        const combinedFlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo);
-        return {
-            pattern: PATTERN.DIRECT_ROUTE,
-            totalPrice: combinedFlightInfo.totalPrice,
-            mainDepartureCity: combinedFlightInfo.departureCityCode,
-            intermediateCity: null,
-            targetCity: combinedFlightInfo.targetCityCode,
-            departureDate: searchInfo.departureDate,
-            returnDate: searchInfo.returnDate,
-            totalTimeMinutes: combinedFlightInfo.totalTimeMinutes,
-            flightInfo: combinedFlightInfo,
-        };
-    });
+    const flights = await getAndValidateFlightData(request, 'flightResponsePromise');
 
-    await resultsStore.append(results);
-});
+    for (const flight of flights.slice(0, step.fanOut)) {
+        const combined = combineOutboundInboundFlightInfo(lastFlight!, flight);
 
-/**
- * Alternative Route: Step 1/4 - Outbound Leg 1 (Departure → Intermediate)
- * Searches for outbound flights from departure to intermediate city
- * Queues top N flights for outbound leg 2 search
- */
-router.addHandler<AltOutboundLeg1UserData>(LABELS.ALT_OUTBOUND_LEG1, async ({ request, crawler }) => {
-    const { searchInfo } = request.userData;
-    const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
-    const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
+        switch (step.role) {
+            case 'combine':
+                await crawler.addRequests([
+                    createPipelineRequest({
+                        pipelineName,
+                        stepIndex: stepIndex + 1,
+                        searchInfo,
+                        combinedFlight: combined,
+                    }),
+                ]);
+                break;
 
-    const requests = topFlightInfos.map((flightInfo) =>
-        createRequest({
-            label: LABELS.ALT_OUTBOUND_LEG2,
-            searchInfo,
-            outboundFlightInfo: flightInfo,
-        }),
-    );
+            case 'save':
+                await resultsStore.append([{
+                    pattern: PATTERN.DIRECT_ROUTE,
+                    totalPrice: combined.totalPrice,
+                    mainDepartureCity: combined.departureCityCode,
+                    intermediateCity: null,
+                    targetCity: combined.targetCityCode,
+                    departureDate: searchInfo.departureDate,
+                    returnDate: searchInfo.returnDate,
+                    totalTimeMinutes: combined.totalTimeMinutes,
+                    flightInfo: combined,
+                }]);
+                break;
 
-    await crawler.addRequests(requests);
-});
+            case 'merge-save': {
+                const final = combineAlternativeRouteFlightInfo(combinedFlight!, combined);
+                const altInfo = searchInfo as AlternativeRouteSearchInfo;
+                await resultsStore.append([{
+                    pattern: PATTERN.ALTERNATIVE_ROUTE,
+                    totalPrice: final.totalPrice,
+                    mainDepartureCity: final.departureCityCode,
+                    intermediateCity: altInfo.intermediateCityCode,
+                    targetCity: final.targetCityCode,
+                    departureDate: searchInfo.departureDate,
+                    returnDate: searchInfo.returnDate,
+                    totalTimeMinutes: final.totalTimeMinutes,
+                    flightInfo: final,
+                }]);
+                break;
+            }
 
-/**
- * Alternative Route: Step 2/4 - Outbound Leg 2 (Intermediate → Target)
- * Searches for flights from intermediate to target city
- * Combines outbound legs 1+2 and queues for inbound leg 1 search
- */
-router.addHandler<AltOutboundLeg2UserData>(LABELS.ALT_OUTBOUND_LEG2, async ({ request, crawler }) => {
-    const { outboundFlightInfo, searchInfo } = request.userData;
-    const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
-    const topFlightInfo = inboundFlightInfoList[0];
-
-    const leg1FlightInfo = combineOutboundInboundFlightInfo(outboundFlightInfo, topFlightInfo);
-
-    const nextRequest = createRequest({
-        label: LABELS.ALT_INBOUND_LEG1,
-        searchInfo,
-        leg1FlightInfo,
-    });
-
-    await crawler.addRequests([nextRequest]);
-});
-
-/**
- * Alternative Route: Step 3/4 - Inbound Leg 1 (Target → Intermediate)
- * Searches for return flights from target to intermediate city
- * Queues top N flights for inbound leg 2 search
- */
-router.addHandler<AltInboundLeg1UserData>(LABELS.ALT_INBOUND_LEG1, async ({ request, crawler }) => {
-    const { searchInfo, leg1FlightInfo } = request.userData;
-    const outboundFlightInfoList = await getAndValidateFlightData(request, 'sseResponsePromise');
-    const topFlightInfos = outboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
-
-    const requests = topFlightInfos.map((flightInfo) =>
-        createRequest({
-            label: LABELS.ALT_INBOUND_LEG2,
-            searchInfo,
-            outboundFlightInfo: flightInfo,
-            leg1FlightInfo,
-        }),
-    );
-
-    await crawler.addRequests(requests);
-});
-
-/**
- * Alternative Route: Step 4/4 - Inbound Leg 2 (Intermediate → Departure)
- * Searches for final leg from intermediate back to departure city
- * Combines all 4 legs and saves complete alternative route to dataset
- */
-router.addHandler<AltInboundLeg2UserData>(LABELS.ALT_INBOUND_LEG2, async ({ request }) => {
-    const { outboundFlightInfo, leg1FlightInfo, searchInfo } = request.userData;
-    const inboundFlightInfoList = await getAndValidateFlightData(request, 'flightResponsePromise');
-    const topFlightInfos = inboundFlightInfoList.slice(0, TOP_FLIGHTS_TO_COLLECT_LIMIT);
-
-    const combineFlightInfoList = topFlightInfos.map((inboundFlightInfo: FlightInfo) =>
-        combineOutboundInboundFlightInfo(outboundFlightInfo, inboundFlightInfo),
-    );
-
-    const results = combineFlightInfoList.map((combinedFlightInfo: FlightInfo) => {
-        const finalCombinedFlightInfo = combineAlternativeRouteFlightInfo(leg1FlightInfo, combinedFlightInfo);
-        return {
-            pattern: PATTERN.ALTERNATIVE_ROUTE,
-            totalPrice: finalCombinedFlightInfo.totalPrice,
-            mainDepartureCity: finalCombinedFlightInfo.departureCityCode,
-            intermediateCity: searchInfo.intermediateCityCode,
-            targetCity: finalCombinedFlightInfo.targetCityCode,
-            departureDate: searchInfo.departureDate,
-            returnDate: searchInfo.returnDate,
-            totalTimeMinutes: finalCombinedFlightInfo.totalTimeMinutes,
-            flightInfo: finalCombinedFlightInfo,
-        };
-    });
-
-    await resultsStore.append(results);
+            default:
+                throw new Error(`Unexpected step role in SEARCH_INBOUND handler: ${step.role}`);
+        }
+    }
 });

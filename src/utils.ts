@@ -1,201 +1,42 @@
 import { log } from 'apify';
 
 import { LABELS } from './constants.js';
+import { PIPELINES } from './pipeline.js';
 import type {
-    AlternativeRouteSearchInfo,
-    AltInboundLeg1UserData,
-    AltInboundLeg2UserData,
-    AltOutboundLeg1UserData,
-    AltOutboundLeg2UserData,
-    DirectInboundUserData,
-    DirectOutboundUserData,
-    DirectRouteSearchInfo,
     FlightData,
     FlightInfo,
     FlightResponseData,
     FlightSection,
-    RouteUserData,
+    PipelineUserData,
 } from './types.js';
 
-/**
- * Type-safe parameters for creating requests with label-specific requirements
- * Each label requires specific searchInfo and flightInfo parameters
- */
+export function createPipelineRequest(userData: PipelineUserData) {
+    const step = PIPELINES[userData.pipelineName][userData.stepIndex];
+    const cities = step.getCities(userData.searchInfo);
+    const { searchInfo } = userData;
 
-// Initial outbound requests (no previous flight info needed)
-interface DirectOutboundParams {
-    label: typeof LABELS.DIRECT_OUTBOUND;
-    searchInfo: DirectRouteSearchInfo;
-}
+    const label = step.responseType === 'sse' ? LABELS.SEARCH_OUTBOUND : LABELS.SEARCH_INBOUND;
 
-interface AltOutboundLeg1Params {
-    label: typeof LABELS.ALT_OUTBOUND_LEG1;
-    searchInfo: AlternativeRouteSearchInfo;
-}
-
-// Continuation requests for inbound (requires outboundFlightInfo)
-interface DirectInboundParams {
-    label: typeof LABELS.DIRECT_INBOUND;
-    searchInfo: DirectRouteSearchInfo;
-    outboundFlightInfo: FlightInfo;
-}
-
-interface AltOutboundLeg2Params {
-    label: typeof LABELS.ALT_OUTBOUND_LEG2;
-    searchInfo: AlternativeRouteSearchInfo;
-    outboundFlightInfo: FlightInfo;
-}
-
-// Alternative route inbound leg1 (requires leg1FlightInfo)
-interface AltInboundLeg1Params {
-    label: typeof LABELS.ALT_INBOUND_LEG1;
-    searchInfo: AlternativeRouteSearchInfo;
-    leg1FlightInfo: FlightInfo;
-}
-
-// Alternative route inbound leg2 (requires both outboundFlightInfo and leg1FlightInfo)
-interface AltInboundLeg2Params {
-    label: typeof LABELS.ALT_INBOUND_LEG2;
-    searchInfo: AlternativeRouteSearchInfo;
-    outboundFlightInfo: FlightInfo;
-    leg1FlightInfo: FlightInfo;
-}
-
-/**
- * Union type for all possible request parameter combinations
- * TypeScript will enforce that the correct parameters are provided for each label
- */
-export type CreateRequestParams =
-    | DirectOutboundParams
-    | DirectInboundParams
-    | AltOutboundLeg1Params
-    | AltOutboundLeg2Params
-    | AltInboundLeg1Params
-    | AltInboundLeg2Params;
-
-/**
- * Universal factory function to create any route request
- * Determines URL and userData structure based on label
- */
-export function createRequest(params: CreateRequestParams) {
-    const { label, searchInfo } = params;
-
-    // Determine which cities and whether we need productId/policyId
-    let departureCityCode: string;
-    let targetCityCode: string;
-    let productId: string | undefined;
-    let policyId: string | undefined;
-
-    switch (label) {
-        case LABELS.DIRECT_OUTBOUND:
-            // TPE -> PRG (outbound)
-            departureCityCode = searchInfo.departureCityCode;
-            targetCityCode = searchInfo.targetCityCode;
-            break;
-
-        case LABELS.DIRECT_INBOUND:
-            // PRG -> TPE (inbound, needs flight from outbound)
-            departureCityCode = searchInfo.departureCityCode;
-            targetCityCode = searchInfo.targetCityCode;
-            productId = params.outboundFlightInfo.productId;
-            policyId = params.outboundFlightInfo.policyId;
-            break;
-
-        case LABELS.ALT_OUTBOUND_LEG1:
-            // TPE -> HKG (outbound leg1 to intermediate)
-            departureCityCode = searchInfo.departureCityCode;
-            targetCityCode = searchInfo.intermediateCityCode;
-            break;
-
-        case LABELS.ALT_OUTBOUND_LEG2:
-            // HKG -> PRG (outbound leg2 from intermediate to target)
-            departureCityCode = searchInfo.departureCityCode;
-            targetCityCode = searchInfo.intermediateCityCode;
-            productId = params.outboundFlightInfo.productId;
-            policyId = params.outboundFlightInfo.policyId;
-            break;
-
-        case LABELS.ALT_INBOUND_LEG1:
-            // PRG -> HKG (inbound leg1 from target to intermediate)
-            departureCityCode = searchInfo.intermediateCityCode;
-            targetCityCode = searchInfo.targetCityCode;
-            break;
-
-        case LABELS.ALT_INBOUND_LEG2:
-            // HKG -> TPE (inbound leg2 from intermediate to departure)
-            departureCityCode = searchInfo.intermediateCityCode;
-            targetCityCode = searchInfo.targetCityCode;
-            productId = params.outboundFlightInfo.productId;
-            policyId = params.outboundFlightInfo.policyId;
-            break;
-
-        default:
-            // TypeScript will ensure this is never reached
-            throw new Error(`Unknown label: ${label satisfies never}`);
-    }
-
-    // Create URL based on whether it's initial search or continuation
     const url =
-        productId && policyId
-            ? createInboundUrl({
-                  departureCityCode,
-                  targetCityCode,
+        step.responseType === 'sse'
+            ? createOutBoundUrl({
+                  ...cities,
                   departureDate: searchInfo.departureDate,
                   returnDate: searchInfo.returnDate,
-                  productId,
-                  policyId,
                   cabinClass: searchInfo.cabinClass,
                   quantity: searchInfo.quantity,
                   airlines: searchInfo.airlines,
               })
-            : createOutBoundUrl({
-                  departureCityCode,
-                  targetCityCode,
+            : createInboundUrl({
+                  ...cities,
                   departureDate: searchInfo.departureDate,
                   returnDate: searchInfo.returnDate,
+                  productId: userData.lastFlight!.productId,
+                  policyId: userData.lastFlight!.policyId,
                   cabinClass: searchInfo.cabinClass,
                   quantity: searchInfo.quantity,
                   airlines: searchInfo.airlines,
               });
-
-    // Build userData with proper typing based on label
-    let userData: RouteUserData;
-
-    switch (label) {
-        case LABELS.DIRECT_OUTBOUND:
-            userData = { searchInfo } as DirectOutboundUserData;
-            break;
-        case LABELS.DIRECT_INBOUND:
-            userData = {
-                searchInfo,
-                outboundFlightInfo: params.outboundFlightInfo,
-            } as DirectInboundUserData;
-            break;
-        case LABELS.ALT_OUTBOUND_LEG1:
-            userData = { searchInfo } as AltOutboundLeg1UserData;
-            break;
-        case LABELS.ALT_OUTBOUND_LEG2:
-            userData = {
-                searchInfo,
-                outboundFlightInfo: params.outboundFlightInfo,
-            } as AltOutboundLeg2UserData;
-            break;
-        case LABELS.ALT_INBOUND_LEG1:
-            userData = {
-                searchInfo,
-                leg1FlightInfo: params.leg1FlightInfo,
-            } as AltInboundLeg1UserData;
-            break;
-        case LABELS.ALT_INBOUND_LEG2:
-            userData = {
-                searchInfo,
-                outboundFlightInfo: params.outboundFlightInfo,
-                leg1FlightInfo: params.leg1FlightInfo,
-            } as AltInboundLeg2UserData;
-            break;
-        default:
-            throw new Error(`Unknown label: ${label satisfies never}`);
-    }
 
     return { url, label, userData };
 }
@@ -203,11 +44,11 @@ export function createRequest(params: CreateRequestParams) {
 export interface OutBoundParams {
     departureCityCode: string;
     targetCityCode: string;
-    departureDate: string; // Departure date (YYYY-MM-DD format)
-    returnDate: string; // Return date (YYYY-MM-DD format)
-    cabinClass?: string; // Cabin class (default: 'y' for economy)
-    quantity?: number; // Number of passengers (default: 1)
-    airlines?: string[]; // Preferred airlines (default: empty array)
+    departureDate: string;
+    returnDate: string;
+    cabinClass?: string;
+    quantity?: number;
+    airlines?: string[];
 }
 
 export function createOutBoundUrl(params: OutBoundParams): string {
@@ -227,7 +68,7 @@ export function createOutBoundUrl(params: OutBoundParams): string {
         acity: targetCityCode,
         ddate: departureDate,
         rdate: returnDate,
-        triptype: 'rt', // Round trip
+        triptype: 'rt',
         class: cabinClass,
         lowpricesource: 'searchform',
         quantity: String(quantity),
@@ -244,21 +85,19 @@ export function createOutBoundUrl(params: OutBoundParams): string {
 }
 
 export interface InBoundParams {
-    departureCityCode: string; // Departure city code (e.g., 'tpe')
-    targetCityCode: string; // Arrival city code (e.g., 'prg')
-    departureDate: string; // Departure date (YYYY-MM-DD format)
-    returnDate: string; // Return date (YYYY-MM-DD format)
-    // dcityName: string; // Departure city name (e.g., 'Taipei'), but seems not required
-    // acityName: string; // Arrival city name (e.g., 'Prague'), but seems not required
-    productId: string; // Product ID from first flight page (criteriaToken)
-    policyId: string; // Policy ID from first flight page (shoppingid and groupKey)
-    locale?: string; // Locale (default: 'zh-TW')
-    curr?: string; // Currency (default: 'TWD')
-    cabinClass?: string; // Cabin class (default: 'Y')
-    quantity?: number; // Number of passengers (default: 1)
-    childqty?: number; // Number of children (default: 0)
-    babyqty?: number; // Number of babies (default: 0)
-    airlines?: string[]; // Preferred airlines (default: empty array)
+    departureCityCode: string;
+    targetCityCode: string;
+    departureDate: string;
+    returnDate: string;
+    productId: string;
+    policyId: string;
+    locale?: string;
+    curr?: string;
+    cabinClass?: string;
+    quantity?: number;
+    childqty?: number;
+    babyqty?: number;
+    airlines?: string[];
 }
 
 export function createInboundUrl(params: InBoundParams): string {
@@ -381,7 +220,6 @@ export function combineOutboundInboundFlightInfo(outbound: FlightInfo, inbound: 
 }
 
 export function combineAlternativeRouteFlightInfo(leg1FlightInfo: FlightInfo, leg2FlightInfo: FlightInfo): FlightInfo {
-    // Find the index where leg1 arrives at the intermediate city
     const intermediateArrivalIndex = leg1FlightInfo.flights.findIndex(
         (flight) => flight.arrivalCityCode === leg1FlightInfo.targetCityCode,
     );
@@ -394,11 +232,9 @@ export function combineAlternativeRouteFlightInfo(leg1FlightInfo: FlightInfo, le
         throw new Error(`Intermediate city ${leg1FlightInfo.targetCityCode} not found in leg1 flights`);
     }
 
-    // Split leg1 flights: before intermediate city (inclusive) and after
     const leg1BeforeIntermediate = leg1FlightInfo.flights.slice(0, intermediateArrivalIndex + 1);
     const leg1AfterIntermediate = leg1FlightInfo.flights.slice(intermediateArrivalIndex + 1);
 
-    // Combine: leg1 before -> leg2 all flights -> leg1 after
     const combinedFlights = [...leg1BeforeIntermediate, ...leg2FlightInfo.flights, ...leg1AfterIntermediate];
 
     return {

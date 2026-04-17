@@ -1,4 +1,4 @@
-import type { LABELS, PATTERN } from './constants.js';
+import type { PATTERN } from './constants.js';
 
 export interface TimePeriod {
     outboundDate: string; // YYYY-MM-DD format
@@ -33,71 +33,22 @@ export interface DirectRouteSearchInfo {
     airlines?: string[]; // Preferred airlines (optional)
 }
 
-export interface DirectRouteRequest {
-    url: string;
-    label: LABELS;
-    userData: {
-        searchInfo: DirectRouteSearchInfo;
-    };
-}
-
 export interface AlternativeRouteSearchInfo extends DirectRouteSearchInfo {
     intermediateCityCode: string;
 }
 
-/**
- * UserData type definitions for different route stages
- */
+export type SearchInfo = DirectRouteSearchInfo | AlternativeRouteSearchInfo;
+export type PipelineName = 'direct' | 'alternative';
 
-// Base userData with promises from hooks
-interface BaseUserData {
+export interface PipelineUserData {
+    pipelineName: PipelineName;
+    stepIndex: number;
+    searchInfo: SearchInfo;
+    lastFlight?: FlightInfo;
+    combinedFlight?: FlightInfo;
     sseResponsePromise?: Promise<FlightInfo[] | null>;
     flightResponsePromise?: Promise<FlightInfo[] | null>;
 }
-
-// DIRECT_OUTBOUND userData
-export interface DirectOutboundUserData extends BaseUserData {
-    searchInfo: DirectRouteSearchInfo;
-}
-
-// DIRECT_INBOUND userData
-export interface DirectInboundUserData extends BaseUserData {
-    searchInfo: DirectRouteSearchInfo;
-    outboundFlightInfo: FlightInfo;
-}
-
-// ALT_OUTBOUND_LEG1 userData
-export interface AltOutboundLeg1UserData extends BaseUserData {
-    searchInfo: AlternativeRouteSearchInfo;
-}
-
-// ALT_OUTBOUND_LEG2 userData
-export interface AltOutboundLeg2UserData extends BaseUserData {
-    searchInfo: AlternativeRouteSearchInfo;
-    outboundFlightInfo: FlightInfo;
-}
-
-// ALT_INBOUND_LEG1 userData
-export interface AltInboundLeg1UserData extends BaseUserData {
-    searchInfo: AlternativeRouteSearchInfo;
-    leg1FlightInfo: FlightInfo;
-}
-
-// ALT_INBOUND_LEG2 userData
-export interface AltInboundLeg2UserData extends BaseUserData {
-    searchInfo: AlternativeRouteSearchInfo;
-    outboundFlightInfo: FlightInfo;
-    leg1FlightInfo: FlightInfo;
-}
-
-// Union type for all userData types
-export type RouteUserData =
-    | DirectOutboundUserData
-    | DirectInboundUserData
-    | AltOutboundLeg1UserData
-    | AltOutboundLeg2UserData
-    | AltInboundLeg1UserData
-    | AltInboundLeg2UserData;
 
 /**
  * Flight segment information
