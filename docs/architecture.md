@@ -19,8 +19,9 @@ src/
   pipeline.ts      Pipeline definitions — the single source of truth for flow logic
   routes.ts        Two generic route handlers (SEARCH_OUTBOUND / SEARCH_INBOUND)
   hooks.ts         Pre-navigation hooks that capture SSE and JSON responses from Trip.com
-  helpers.ts       Flight data validation and extraction
-  utils.ts         URL builders, createPipelineRequest, flight combination helpers
+  helpers.ts       Flight data validation helper
+  utils.ts         URL builders and createPipelineRequest
+  combiners.ts     Flight combination logic (combineOutboundInbound, combineAlternativeRoute)
   types.ts         TypeScript types
   constants.ts     LABELS enum, shared constants
   ResultsStore.ts  Key-value store wrapper for accumulating results
@@ -34,7 +35,7 @@ Each Crawlee request carries a `PipelineUserData` object with:
 - `pipelineName` — which pipeline (`'direct'` or `'alternative'`)
 - `stepIndex` — position in the pipeline
 - `searchInfo` — cities, dates, cabin class, etc.
-- `lastFlight` — the flight selected in the previous SSE step (provides `productId` for the next URL)
+- `lastFlight` — the flight selected in the previous outbound step (provides `productId` for the next URL)
 - `combinedFlight` — accumulated combined flight from earlier steps (used in alternative route)
 
-The two route handlers (`SEARCH_OUTBOUND`, `SEARCH_INBOUND`) look up the current step from the pipeline and decide what to do based on `step.role`.
+`SEARCH_OUTBOUND` fans out to the next step for each top-N flight. `SEARCH_INBOUND` calls `step.execute()` with the current flight data and dispatches on the returned `StepResult` — either advancing the pipeline or saving results. The handlers have no knowledge of route-specific logic.

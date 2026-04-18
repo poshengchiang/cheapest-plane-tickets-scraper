@@ -17,24 +17,24 @@ After the refactor, the complete flow is declared in one place (`pipeline.ts`), 
 
 ## Step roles
 
-Each pipeline step has a `role` that tells the `SEARCH_INBOUND` handler what to do with the flight data:
+Each pipeline step has a `role` that describes its intent in the flow:
 
-| Role | What happens |
-|---|---|
-| `fan-out` | SSE step — select top N flights, queue each as the next step |
-| `combine` | Combine `lastFlight` + current flight → carry forward as `combinedFlight` |
-| `save` | Combine `lastFlight` + current flight → save as a direct route result |
-| `merge-save` | Combine `lastFlight` + current flight as leg2, merge with `combinedFlight` (leg1) → save as alternative route result |
+| Role | Handled by | What happens |
+|---|---|---|
+| `fan-out` | `SEARCH_OUTBOUND` | Select top N flights, queue each as the next step |
+| `combine` | `SEARCH_INBOUND` | `execute()` combines lastFlight + current → carry forward as `combinedFlight` |
+| `save` | `SEARCH_INBOUND` | `execute()` combines lastFlight + current → save as a direct route result |
+| `merge-save` | `SEARCH_INBOUND` | `execute()` combines lastFlight + current as leg2, merges with `combinedFlight` (leg1) → save as alternative route result |
 
-`fan-out` is always handled by `SEARCH_OUTBOUND`. The other three roles are handled by `SEARCH_INBOUND`.
+`SEARCH_INBOUND` calls `step.execute()` and dispatches on the returned `StepResult` — it has no knowledge of which route type it's serving.
 
 ---
 
 ## Direct route pipeline
 
 ```
-SEARCH_OUTBOUND (sse, fan-out)     A → C   get top N outbound flights
-SEARCH_INBOUND  (flight, save)     C → A   for each, get return flights → combine & save
+SEARCH_OUTBOUND (outbound, fan-out)   A → C   get top N outbound flights
+SEARCH_INBOUND  (inbound, save)       C → A   for each, get return flights → combine & save
 ```
 
 ---
@@ -42,10 +42,10 @@ SEARCH_INBOUND  (flight, save)     C → A   for each, get return flights → co
 ## Alternative route pipeline
 
 ```
-SEARCH_OUTBOUND (sse, fan-out)     A → B   get top N flights to intermediate
-SEARCH_INBOUND  (flight, combine)  B → C   for each, get onward flights → combine into leg1 (combinedFlight)
-SEARCH_OUTBOUND (sse, fan-out)     C → B   get top N return flights from target
-SEARCH_INBOUND  (flight, merge-save) B → A for each, get final leg → combine into leg2, merge with leg1 → save
+SEARCH_OUTBOUND (outbound, fan-out)      A → B   get top N flights to intermediate
+SEARCH_INBOUND  (inbound, combine)       B → C   for each, get onward flights → combine into leg1 (combinedFlight)
+SEARCH_OUTBOUND (outbound, fan-out)      C → B   get top N return flights from target
+SEARCH_INBOUND  (inbound, merge-save)    B → A   for each, get final leg → combine into leg2, merge with leg1 → save
 ```
 
 ---
@@ -68,19 +68,24 @@ interface PipelineUserData {
     pipelineName: PipelineName;       // 'direct' | 'alternative'
     stepIndex: number;                // current position in the pipeline
     searchInfo: SearchInfo;           // cities, dates, cabin class
-    lastFlight?: FlightInfo;          // selected flight from previous SSE step
+    lastFlight?: FlightInfo;          // selected flight from previous outbound step
     combinedFlight?: FlightInfo;      // accumulated leg1 result (alternative route only)
 }
 
-// pipeline.ts
-interface PipelineStep {
-    name: string;                     // for logging
-    responseType: 'sse' | 'flight';
-    fanOut: number;                   // max results to advance to next step
-    role: StepRole;
-    getCities: (searchInfo) => { departureCityCode, targetCityCode };
+// pipeline.ts — discriminated union on handler
+type SSEStep = BaseStep & { handler: 'outbound' }
+type FlightStep = BaseStep & {
+    handler: 'inbound';
+    execute: (params: StepExecuteParams) => StepResult;
 }
+type PipelineStep = SSEStep | FlightStep;
+
+type StepResult =
+    | { type: 'advance'; combinedFlight: FlightInfo }
+    | { type: 'save'; results: RouteResult[] };
 ```
+
+`execute` is required on `FlightStep` and absent on `SSEStep` — enforced at compile time via the discriminated union.
 
 ---
 
@@ -90,4 +95,4 @@ interface PipelineStep {
 - `SEARCH_OUTBOUND` — initiates a new flight search (Trip.com `showfarefirst`, SSE response)
 - `SEARCH_INBOUND` — continues a search to get the return leg (Trip.com `ShowFareNext`, JSON response)
 
-The specific step names (outbound-leg1, inbound-leg2, etc.) live as `name` strings inside each `PipelineStep` for logging purposes only.
+The `handler` field on each `PipelineStep` (`'outbound'` | `'inbound'`) mirrors these labels directly, decoupling the step definition from the transport protocol (SSE vs JSON).
