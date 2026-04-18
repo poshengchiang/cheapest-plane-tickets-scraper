@@ -20,7 +20,7 @@ export interface Input {
     maxFlightsPerSearch?: number; // Maximum flights to collect per search (default: 10)
 }
 
-export interface DirectRouteSearchInfo {
+interface BaseSearchInfo {
     departureCityCode: string;
     targetCityCode: string;
     departureDate: string; // YYYY-MM-DD format
@@ -30,7 +30,12 @@ export interface DirectRouteSearchInfo {
     airlines?: string[]; // Preferred airlines (optional)
 }
 
-export interface AlternativeRouteSearchInfo extends DirectRouteSearchInfo {
+export interface DirectRouteSearchInfo extends BaseSearchInfo {
+    routeType: 'direct';
+}
+
+export interface AlternativeRouteSearchInfo extends BaseSearchInfo {
+    routeType: 'alternative';
     intermediateCityCode: string;
 }
 
@@ -123,3 +128,34 @@ export interface FlightResponseData {
     basicInfo: { recordCount: number; productId: string };
     itineraryList: FlightData[];
 }
+
+export type StepRole = 'fan-out' | 'combine' | 'save' | 'merge-save';
+
+export type StepResult =
+    | { type: 'advance'; combinedFlight: FlightInfo }
+    | { type: 'save'; results: RouteResult[] };
+
+export interface StepExecuteParams {
+    flight: FlightInfo;
+    lastFlight: FlightInfo | undefined;
+    combinedFlight: FlightInfo | undefined;
+    searchInfo: SearchInfo;
+}
+
+interface BaseStep {
+    name: string;
+    fanOut: number;
+    role: StepRole;
+    getCities: (searchInfo: SearchInfo) => { departureCityCode: string; targetCityCode: string };
+}
+
+export interface OutboundStep extends BaseStep {
+    handler: 'outbound';
+}
+
+export interface InboundStep extends BaseStep {
+    handler: 'inbound';
+    execute: (params: StepExecuteParams) => StepResult;
+}
+
+export type PipelineStep = OutboundStep | InboundStep;
