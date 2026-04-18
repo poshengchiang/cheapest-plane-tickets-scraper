@@ -1,9 +1,11 @@
+import { Injectable } from '@nestjs/common';
 import { Actor } from 'apify';
 
 import { RESULTS_KEY } from '../constants.js';
 import type { RouteResult } from '../types.js';
 
-class ResultsStore {
+@Injectable()
+export class ResultsStoreService {
     private flightsCount = 0;
     private maxLimit = 10;
 
@@ -34,5 +36,3 @@ class ResultsStore {
         await Actor.setValue(RESULTS_KEY, []);
     }
 }
-
-export const resultsStore = new ResultsStore();

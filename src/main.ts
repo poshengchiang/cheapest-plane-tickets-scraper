@@ -1,7 +1,10 @@
+import 'reflect-metadata';
+
+import { NestFactory } from '@nestjs/core';
 import { Actor, Dataset, log } from 'apify';
 
-import { createApp } from './app.js';
-import { resultsStore } from './services/index.js';
+import { ActorService } from './actor.service.js';
+import { AppModule } from './app.module.js';
 import type { Input } from './types.js';
 
 await Actor.init();
@@ -23,10 +26,11 @@ log.info('Actor input received:', {
     maxFlightsPerSearch: input.maxFlightsPerSearch,
 });
 
-const { crawler, startUrls } = await createApp(input);
-await crawler.run(startUrls);
+const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
+const actorService = app.get(ActorService);
+const sortedResults = await actorService.run(input);
+await app.close();
 
-const sortedResults = await resultsStore.getAllSorted();
 log.info(`Crawler finished. Total results collected: ${sortedResults.length}`);
 
 if (sortedResults.length === 0) {
@@ -41,9 +45,9 @@ const expensiveFlight = sortedResults[sortedResults.length - 1];
 const priceRange = expensiveFlight.totalPrice - cheapestFlight.totalPrice;
 
 log.info(
-    `Saved ${sortedResults.length} sorted results to dataset\n
-    Cheapest flight: ${cheapestFlight.totalPrice} TWD (${cheapestFlight.pattern})\n
-    Price range: ${cheapestFlight.totalPrice} - ${expensiveFlight.totalPrice} TWD (Δ${priceRange} TWD)`
+    `Saved ${sortedResults.length} sorted results to dataset\n` +
+    `    Cheapest flight: ${cheapestFlight.totalPrice} TWD (${cheapestFlight.pattern})\n` +
+    `    Price range: ${cheapestFlight.totalPrice} - ${expensiveFlight.totalPrice} TWD (Δ${priceRange} TWD)`
 );
 
 await Actor.exit(
