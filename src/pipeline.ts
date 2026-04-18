@@ -15,14 +15,23 @@ export interface StepExecuteParams {
     searchInfo: SearchInfo;
 }
 
-export interface PipelineStep {
+interface BaseStep {
     name: string;
-    responseType: 'sse' | 'flight';
     fanOut: number;
     role: StepRole;
     getCities: (searchInfo: SearchInfo) => { departureCityCode: string; targetCityCode: string };
-    execute?: (params: StepExecuteParams) => StepResult;
 }
+
+export interface SSEStep extends BaseStep {
+    responseType: 'sse';
+}
+
+export interface FlightStep extends BaseStep {
+    responseType: 'flight';
+    execute: (params: StepExecuteParams) => StepResult;
+}
+
+export type PipelineStep = SSEStep | FlightStep;
 
 const directPipeline: PipelineStep[] = [
     {
