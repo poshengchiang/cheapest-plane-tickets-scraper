@@ -1,6 +1,6 @@
-import { LABELS } from './constants.js';
-import { PIPELINES } from './pipeline.js';
-import type { PipelineUserData } from './types.js';
+import { LABELS } from '../constants.js';
+import type { PipelineUserData } from '../types.js';
+import { PIPELINES } from './pipeline-registry.js';
 
 export function createPipelineRequest(userData: PipelineUserData) {
     const step = PIPELINES[userData.pipelineName][userData.stepIndex];
@@ -143,5 +143,3 @@ export function createInboundUrl(params: InBoundParams): string {
 
     return `${baseUrl}?${searchParams.toString()}`;
 }
-
-

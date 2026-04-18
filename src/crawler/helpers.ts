@@ -1,7 +1,7 @@
 import { log } from 'apify';
 import type { PlaywrightCrawlingContext } from 'crawlee';
 
-import type { FlightInfo } from './types.js';
+import type { FlightInfo } from '../types.js';
 
 export async function getAndValidateFlightData(
     request: PlaywrightCrawlingContext['request'],

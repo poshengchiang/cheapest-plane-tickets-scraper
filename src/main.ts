@@ -1,13 +1,8 @@
 import { Actor, Dataset, log } from 'apify';
-import { PlaywrightCrawler } from 'crawlee';
 
-import { captureResponseHook, captureSSEResponseHook } from './hooks.js';
-import { AlternativeRouteModule } from './modules/alternative-route/index.js';
-import { DirectRouteModule } from './modules/direct-route/index.js';
-import { router } from './routes.js';
-import { resultsStore } from './services/ResultsStore.js';
+import { createApp } from './app.js';
+import { resultsStore } from './services/index.js';
 import type { Input } from './types.js';
-import { createPipelineRequest } from './utils.js';
 
 await Actor.init();
 
@@ -17,56 +12,18 @@ if (!input.mainDepartureCity || !input.targetCity || !input.timePeriods || input
     throw new Error('Missing required input: mainDepartureCity, targetCity, and timePeriods are required');
 }
 
-const { timePeriods, maxFlightsPerSearch } = input;
-
 log.info('Actor input received:', {
     mainDepartureCity: input.mainDepartureCity,
     targetCity: input.targetCity,
     alternativeDepartureCities: input.alternativeDepartureCities,
     cabinClass: input.cabinClass,
     numberOfPeople: input.numberOfPeople,
-    timePeriodsCount: timePeriods.length,
+    timePeriodsCount: input.timePeriods.length,
     airlinesFilter: input.airlines && input.airlines.length > 0 ? input.airlines : 'none',
-    maxFlightsPerSearch,
+    maxFlightsPerSearch: input.maxFlightsPerSearch,
 });
 
-if (maxFlightsPerSearch) {
-    resultsStore.setMaxLimit(maxFlightsPerSearch);
-}
-
-const proxyConfiguration = await Actor.createProxyConfiguration({
-    groups: ['RESIDENTIAL'],
-});
-
-const crawler = new PlaywrightCrawler({
-    proxyConfiguration,
-    maxConcurrency: 3,
-    headless: true,
-    requestHandler: async (context) => {
-        if (resultsStore.isReachLimit()) {
-            log.info('Flight limit reached, skipping request', { label: context.request.label });
-            context.request.noRetry = true;
-            return;
-        }
-        await router(context);
-    },
-    navigationTimeoutSecs: 60,
-    preNavigationHooks: [captureSSEResponseHook, captureResponseHook],
-    launchContext: {
-        launchOptions: {
-            args: ['--disable-gpu'],
-        },
-    },
-});
-
-const modules = [DirectRouteModule, AlternativeRouteModule];
-
-const startUrls = modules.flatMap((module) =>
-    module.createSearchInfos(input, timePeriods).map((searchInfo) =>
-        createPipelineRequest({ pipelineName: module.pipelineName, stepIndex: 0, searchInfo }),
-    ),
-);
-
+const { crawler, startUrls } = await createApp(input);
 await crawler.run(startUrls);
 
 const sortedResults = await resultsStore.getAllSorted();
@@ -83,9 +40,11 @@ const cheapestFlight = sortedResults[0];
 const expensiveFlight = sortedResults[sortedResults.length - 1];
 const priceRange = expensiveFlight.totalPrice - cheapestFlight.totalPrice;
 
-log.info(`Saved ${sortedResults.length} sorted results to dataset`);
-log.info(`Cheapest flight: ${cheapestFlight.totalPrice} TWD (${cheapestFlight.pattern})`);
-log.info(`Price range: ${cheapestFlight.totalPrice} - ${expensiveFlight.totalPrice} TWD (Δ${priceRange} TWD)`);
+log.info(
+    `Saved ${sortedResults.length} sorted results to dataset\n
+    Cheapest flight: ${cheapestFlight.totalPrice} TWD (${cheapestFlight.pattern})\n
+    Price range: ${cheapestFlight.totalPrice} - ${expensiveFlight.totalPrice} TWD (Δ${priceRange} TWD)`
+);
 
 await Actor.exit(
     `✅ Successfully found ${sortedResults.length} flight options! ` +

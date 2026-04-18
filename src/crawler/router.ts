@@ -1,11 +1,11 @@
 import { createPlaywrightRouter } from 'crawlee';
 
-import { LABELS } from './constants.js';
+import { LABELS } from '../constants.js';
+import { resultsStore } from '../services/ResultsStore.js';
+import type { InboundPipelineUserData, OutboundPipelineUserData } from '../types.js';
 import { getAndValidateFlightData } from './helpers.js';
-import { PIPELINES } from './pipeline.js';
-import { resultsStore } from './services/ResultsStore.js';
-import type { InboundPipelineUserData, OutboundPipelineUserData } from './types.js';
-import { createPipelineRequest } from './utils.js';
+import { PIPELINES } from './pipeline-registry.js';
+import { createPipelineRequest } from './url-utils.js';
 
 export const router = createPlaywrightRouter();
 
