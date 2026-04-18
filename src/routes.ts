@@ -32,8 +32,8 @@ router.addHandler<PipelineUserData>(LABELS.SEARCH_INBOUND, async ({ request, cra
     const { pipelineName, stepIndex, searchInfo, lastFlight, combinedFlight } = request.userData;
     const step = PIPELINES[pipelineName][stepIndex];
 
-    if (step.responseType !== 'flight') {
-        throw new Error(`Unexpected SSE step '${step.name}' in SEARCH_INBOUND handler`);
+    if (step.handler !== 'inbound') {
+        throw new Error(`Unexpected outbound step '${step.name}' in SEARCH_INBOUND handler`);
     }
 
     const flights = await getAndValidateFlightData(request, 'flightResponsePromise');

@@ -15,10 +15,10 @@ export function createPipelineRequest(userData: PipelineUserData) {
     const cities = step.getCities(userData.searchInfo);
     const { searchInfo } = userData;
 
-    const label = step.responseType === 'sse' ? LABELS.SEARCH_OUTBOUND : LABELS.SEARCH_INBOUND;
+    const label = step.handler === 'outbound' ? LABELS.SEARCH_OUTBOUND : LABELS.SEARCH_INBOUND;
 
     const url =
-        step.responseType === 'sse'
+        step.handler === 'outbound'
             ? createOutBoundUrl({
                   ...cities,
                   departureDate: searchInfo.departureDate,

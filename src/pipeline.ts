@@ -23,11 +23,11 @@ interface BaseStep {
 }
 
 export interface SSEStep extends BaseStep {
-    responseType: 'sse';
+    handler: 'outbound';
 }
 
 export interface FlightStep extends BaseStep {
-    responseType: 'flight';
+    handler: 'inbound';
     execute: (params: StepExecuteParams) => StepResult;
 }
 
@@ -36,14 +36,14 @@ export type PipelineStep = SSEStep | FlightStep;
 const directPipeline: PipelineStep[] = [
     {
         name: 'outbound',
-        responseType: 'sse',
+        handler: 'outbound',
         fanOut: TOP_FLIGHTS_TO_COLLECT_LIMIT,
         role: 'fan-out',
         getCities: (info) => ({ departureCityCode: info.departureCityCode, targetCityCode: info.targetCityCode }),
     },
     {
         name: 'inbound',
-        responseType: 'flight',
+        handler: 'inbound',
         fanOut: TOP_FLIGHTS_TO_COLLECT_LIMIT,
         role: 'save',
         getCities: (info) => ({ departureCityCode: info.departureCityCode, targetCityCode: info.targetCityCode }),
@@ -70,7 +70,7 @@ const directPipeline: PipelineStep[] = [
 const alternativePipeline: PipelineStep[] = [
     {
         name: 'outbound-leg1',
-        responseType: 'sse',
+        handler: 'outbound',
         fanOut: TOP_FLIGHTS_TO_COLLECT_LIMIT,
         role: 'fan-out',
         getCities: (info) => ({
@@ -80,7 +80,7 @@ const alternativePipeline: PipelineStep[] = [
     },
     {
         name: 'outbound-leg2',
-        responseType: 'flight',
+        handler: 'inbound',
         fanOut: 1,
         role: 'combine',
         getCities: (info) => ({
@@ -94,7 +94,7 @@ const alternativePipeline: PipelineStep[] = [
     },
     {
         name: 'inbound-leg1',
-        responseType: 'sse',
+        handler: 'outbound',
         fanOut: TOP_FLIGHTS_TO_COLLECT_LIMIT,
         role: 'fan-out',
         getCities: (info) => ({
@@ -104,7 +104,7 @@ const alternativePipeline: PipelineStep[] = [
     },
     {
         name: 'inbound-leg2',
-        responseType: 'flight',
+        handler: 'inbound',
         fanOut: TOP_FLIGHTS_TO_COLLECT_LIMIT,
         role: 'merge-save',
         getCities: (info) => ({
