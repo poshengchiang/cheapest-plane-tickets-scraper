@@ -78,18 +78,66 @@ Ask first:
 
 ## Project Structure
 
+```
 .actor/
-├── actor.json # Actor config: name, version, env vars, runtime settings
-├── input_schema.json # Input validation & Console form definition
-└── output_schema.json # Specifies where an Actor stores its output
+├── actor.json            # Actor config: name, version, env vars, runtime settings
+├── input_schema.json     # Input validation & Console form definition
+└── output_schema.json    # Specifies where an Actor stores its output
 src/
-└── main.js # Actor entry point and orchestrator
-storage/ # Local storage (mirrors Cloud during development)
-├── datasets/ # Output items (JSON objects)
-├── key_value_stores/ # Files, config, INPUT
-└── request_queues/ # Pending crawl requests
-Dockerfile # Container image definition
-AGENTS.md # AI agent instructions (this file)
+├── main.ts               # Bootstrap only: init → createApp → run → collect & output
+├── app.ts                # Main module: registers route modules, wires crawler
+├── types.ts              # Shared TypeScript interfaces and types
+├── constants.ts          # Shared enums and constants
+├── crawler/              # Crawler infrastructure (internal)
+│   ├── index.ts          # Public API: exports createCrawler()
+│   ├── hooks.ts          # Playwright pre-navigation hooks (SSE + JSON capture)
+│   ├── router.ts         # Request router (SEARCH_OUTBOUND / SEARCH_INBOUND handlers)
+│   ├── helpers.ts        # getAndValidateFlightData utility
+│   ├── pipeline-registry.ts  # Maps pipeline names to their PipelineStep arrays
+│   └── url-utils.ts      # URL builders and createPipelineRequest factory
+├── modules/              # Route modules (business logic per search pattern)
+│   ├── index.ts          # Barrel: re-exports all route modules
+│   ├── direct-route/     # Direct flight search (A → B, outbound + inbound)
+│   │   ├── index.ts      # Public: DirectRouteModule
+│   │   └── pipeline.ts   # 2-step pipeline definition (internal)
+│   └── alternative-route/  # Alternative route search (A → C → B, two bookings)
+│       ├── index.ts      # Public: AlternativeRouteModule
+│       ├── pipeline.ts   # 4-step pipeline definition (internal)
+│       └── combiners.ts  # Flight leg merging logic (internal)
+└── services/             # Shared services
+    ├── index.ts          # Barrel: re-exports public service API
+    ├── ResultsStore.ts   # Singleton KV-backed store for collected RouteResults
+    └── flight-data.ts    # Trip.com response parsing and flight combining
+storage/                  # Local storage (mirrors Cloud during development)
+├── datasets/             # Output items (JSON objects)
+├── key_value_stores/     # Files, config, INPUT
+└── request_queues/       # Pending crawl requests
+Dockerfile                # Container image definition
+AGENTS.md                 # AI agent instructions (this file)
+```
+
+## Architecture
+
+### Module-based structure
+
+The codebase follows a NestJS-inspired module pattern (by convention, not enforced):
+
+- **`main.ts`** — thin bootstrap. Only handles: Actor init, input validation, logging, calling `createApp`, running the crawler, and pushing results to Dataset.
+- **`app.ts`** — the "AppModule". Declares which route modules are active and wires them with the crawler. Adding a new search pattern = adding a module here.
+- **`crawler/`** — crawler infrastructure. Consumers only need `createCrawler()` from `index.ts`; internal files (`hooks`, `router`, etc.) are implementation details.
+- **`modules/`** — each sub-folder is a self-contained route module with a clear public API via its `index.ts`. Internal pipeline files are not meant to be imported from outside the module.
+- **`services/`** — shared services accessible via `services/index.ts`. `ResultsStore` manages result accumulation; `flight-data.ts` handles Trip.com API response parsing.
+
+### Pipeline pattern
+
+Each route module defines a `PipelineStep[]`. The crawler drives execution step-by-step:
+
+1. **Outbound step** (`handler: 'outbound'`): fans out to top N flights, creates N inbound requests
+2. **Inbound step** (`handler: 'inbound'`): either `advance` (creates next request with combined flight) or `save` (appends to ResultsStore)
+
+Direct route = 2 steps. Alternative route = 4 steps (two separate bookings).
+
+The `pipeline-registry.ts` in `crawler/` maps pipeline names to their step arrays so the router can look up the correct step for each request.
 
 ## Actor Input Schema
 
