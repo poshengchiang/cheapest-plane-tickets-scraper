@@ -11,7 +11,7 @@ createRequest({ label: LABELS.ALT_OUTBOUND_LEG2, ... })
 
 This scattered flow logic across 6 handlers. Adding a new route pattern meant adding new labels, new handlers, and updating multiple files.
 
-After the refactor, the complete flow is declared in one place (`pipeline.ts`), and the two generic handlers simply advance through it.
+After the refactor, the complete flow is declared in one place per module (`modules/*/pipeline.ts`), registered in `crawler/pipeline-registry.ts`, and the two generic handlers in `crawler/router.ts` simply advance through it.
 
 ---
 
@@ -52,11 +52,14 @@ SEARCH_INBOUND  (inbound, merge-save)    B → A   for each, get final leg → c
 
 ## Adding a new pipeline
 
-1. Define the steps in `pipeline.ts` and add the new name to `PIPELINES`
-2. Add the new `PipelineName` literal to the union in `types.ts`
-3. Call `createPipelineRequest({ pipelineName: 'new-name', stepIndex: 0, searchInfo })` from `main.ts`
+1. Create `src/modules/new-route/pipeline.ts` with the `PipelineStep[]` definition
+2. Create `src/modules/new-route/index.ts` that exports a module object (`pipelineName`, `pipeline`, `createSearchInfos`)
+3. Re-export it from `src/modules/index.ts`
+4. Register it in `src/crawler/pipeline-registry.ts` by adding it to `PIPELINES`
+5. Add the new `PipelineName` literal to the union in `types.ts`
+6. Add the module to the `modules` array in `src/app.ts`
 
-No changes needed to `routes.ts`, `hooks.ts`, or `utils.ts`.
+No changes needed to `crawler/router.ts`, `crawler/hooks.ts`, `crawler/url-utils.ts`, or `main.ts`.
 
 ---
 
@@ -72,7 +75,7 @@ interface PipelineUserData {
     combinedFlight?: FlightInfo;      // accumulated leg1 result (alternative route only)
 }
 
-// pipeline.ts — discriminated union on handler
+// types.ts — discriminated union on handler
 type SSEStep = BaseStep & { handler: 'outbound' }
 type FlightStep = BaseStep & {
     handler: 'inbound';
