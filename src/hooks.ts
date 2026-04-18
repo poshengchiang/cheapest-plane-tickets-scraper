@@ -3,6 +3,7 @@ import type { PlaywrightHook } from 'crawlee';
 
 import { LABELS } from './constants.js';
 import { extractFlightData } from './services/flight-data.js';
+import type { InboundPipelineUserData, OutboundPipelineUserData } from './types.js';
 
 export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
     if (request.label !== LABELS.SEARCH_OUTBOUND) return;
@@ -10,7 +11,7 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
     // eslint-disable-next-line no-param-reassign
     gotoOptions.waitUntil = 'domcontentloaded';
 
-    request.userData.sseResponsePromise = page
+    (request.userData as OutboundPipelineUserData).sseResponsePromise = page
         .waitForResponse(
             (response) => response.url().endsWith('FlightListSearchSSE') && response.status() === 200,
             { timeout: 60000 },
@@ -55,7 +56,7 @@ export const captureResponseHook: PlaywrightHook = async ({ page, request }, got
     // eslint-disable-next-line no-param-reassign
     gotoOptions.waitUntil = 'domcontentloaded';
 
-    request.userData.flightResponsePromise = page
+    (request.userData as InboundPipelineUserData).flightResponsePromise = page
         .waitForResponse(
             (response) => response.url().endsWith('FlightListSearch') && response.status() === 200,
             { timeout: 60000 },

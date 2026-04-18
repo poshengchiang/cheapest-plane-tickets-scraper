@@ -42,15 +42,24 @@ export interface AlternativeRouteSearchInfo extends BaseSearchInfo {
 export type SearchInfo = DirectRouteSearchInfo | AlternativeRouteSearchInfo;
 export type PipelineName = 'direct' | 'alternative';
 
-export interface PipelineUserData {
+export interface OutboundPipelineUserData {
     pipelineName: PipelineName;
     stepIndex: number;
     searchInfo: SearchInfo;
-    lastFlight?: FlightInfo;
     combinedFlight?: FlightInfo;
     sseResponsePromise?: Promise<FlightInfo[] | null>;
+}
+
+export interface InboundPipelineUserData {
+    pipelineName: PipelineName;
+    stepIndex: number;
+    searchInfo: SearchInfo;
+    lastFlight: FlightInfo;
+    combinedFlight?: FlightInfo;
     flightResponsePromise?: Promise<FlightInfo[] | null>;
 }
+
+export type PipelineUserData = OutboundPipelineUserData | InboundPipelineUserData;
 
 export interface FlightSegment {
     airline: string; // e.g., "EVA Air"
@@ -137,7 +146,7 @@ export type StepResult =
 
 export interface StepExecuteParams {
     flight: FlightInfo;
-    lastFlight: FlightInfo | undefined;
+    lastFlight: FlightInfo;
     combinedFlight: FlightInfo | undefined;
     searchInfo: SearchInfo;
 }

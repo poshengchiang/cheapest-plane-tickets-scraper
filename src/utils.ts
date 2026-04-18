@@ -7,30 +7,36 @@ export function createPipelineRequest(userData: PipelineUserData) {
     const cities = step.getCities(userData.searchInfo);
     const { searchInfo } = userData;
 
-    const label = step.handler === 'outbound' ? LABELS.SEARCH_OUTBOUND : LABELS.SEARCH_INBOUND;
+    if (step.handler === 'outbound') {
+        return {
+            url: createOutBoundUrl({
+                ...cities,
+                departureDate: searchInfo.departureDate,
+                returnDate: searchInfo.returnDate,
+                cabinClass: searchInfo.cabinClass,
+                quantity: searchInfo.quantity,
+                airlines: searchInfo.airlines,
+            }),
+            label: LABELS.SEARCH_OUTBOUND,
+            userData,
+        };
+    }
 
-    const url =
-        step.handler === 'outbound'
-            ? createOutBoundUrl({
-                  ...cities,
-                  departureDate: searchInfo.departureDate,
-                  returnDate: searchInfo.returnDate,
-                  cabinClass: searchInfo.cabinClass,
-                  quantity: searchInfo.quantity,
-                  airlines: searchInfo.airlines,
-              })
-            : createInboundUrl({
-                  ...cities,
-                  departureDate: searchInfo.departureDate,
-                  returnDate: searchInfo.returnDate,
-                  productId: userData.lastFlight!.productId,
-                  policyId: userData.lastFlight!.policyId,
-                  cabinClass: searchInfo.cabinClass,
-                  quantity: searchInfo.quantity,
-                  airlines: searchInfo.airlines,
-              });
-
-    return { url, label, userData };
+    if (!('lastFlight' in userData)) throw new Error(`Step '${step.name}' requires InboundPipelineUserData`);
+    return {
+        url: createInboundUrl({
+            ...cities,
+            departureDate: searchInfo.departureDate,
+            returnDate: searchInfo.returnDate,
+            productId: userData.lastFlight.productId,
+            policyId: userData.lastFlight.policyId,
+            cabinClass: searchInfo.cabinClass,
+            quantity: searchInfo.quantity,
+            airlines: searchInfo.airlines,
+        }),
+        label: LABELS.SEARCH_INBOUND,
+        userData,
+    };
 }
 
 export interface OutBoundParams {

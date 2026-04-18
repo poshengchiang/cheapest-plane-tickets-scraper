@@ -4,12 +4,12 @@ import { LABELS } from './constants.js';
 import { getAndValidateFlightData } from './helpers.js';
 import { PIPELINES } from './pipeline.js';
 import { resultsStore } from './services/ResultsStore.js';
-import type { PipelineUserData } from './types.js';
+import type { InboundPipelineUserData, OutboundPipelineUserData } from './types.js';
 import { createPipelineRequest } from './utils.js';
 
 export const router = createPlaywrightRouter();
 
-router.addHandler<PipelineUserData>(LABELS.SEARCH_OUTBOUND, async ({ request, crawler }) => {
+router.addHandler<OutboundPipelineUserData>(LABELS.SEARCH_OUTBOUND, async ({ request, crawler }) => {
     const { pipelineName, stepIndex, searchInfo, combinedFlight } = request.userData;
     const step = PIPELINES[pipelineName][stepIndex];
 
@@ -28,7 +28,7 @@ router.addHandler<PipelineUserData>(LABELS.SEARCH_OUTBOUND, async ({ request, cr
     await crawler.addRequests(nextRequests);
 });
 
-router.addHandler<PipelineUserData>(LABELS.SEARCH_INBOUND, async ({ request, crawler }) => {
+router.addHandler<InboundPipelineUserData>(LABELS.SEARCH_INBOUND, async ({ request, crawler }) => {
     const { pipelineName, stepIndex, searchInfo, lastFlight, combinedFlight } = request.userData;
     const step = PIPELINES[pipelineName][stepIndex];
 

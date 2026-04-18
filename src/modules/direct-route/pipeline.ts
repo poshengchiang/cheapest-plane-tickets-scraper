@@ -17,7 +17,7 @@ export const directPipeline: PipelineStep[] = [
         role: 'save',
         getCities: (info) => ({ departureCityCode: info.departureCityCode, targetCityCode: info.targetCityCode }),
         execute: ({ flight, lastFlight, searchInfo }) => {
-            const combined = combineOutboundInboundFlightInfo(lastFlight!, flight);
+            const combined = combineOutboundInboundFlightInfo(lastFlight, flight);
             return {
                 type: 'save',
                 results: [{

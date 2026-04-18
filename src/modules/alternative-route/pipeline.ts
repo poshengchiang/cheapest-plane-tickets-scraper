@@ -29,7 +29,7 @@ export const alternativePipeline: PipelineStep[] = [
             return { departureCityCode: alt.departureCityCode, targetCityCode: alt.intermediateCityCode };
         },
         execute: ({ flight, lastFlight }) => {
-            const combined = combineOutboundInboundFlightInfo(lastFlight!, flight);
+            const combined = combineOutboundInboundFlightInfo(lastFlight, flight);
             return { type: 'advance', combinedFlight: combined };
         },
     },
@@ -54,7 +54,7 @@ export const alternativePipeline: PipelineStep[] = [
         },
         execute: ({ flight, lastFlight, combinedFlight, searchInfo }) => {
             const alt = asAlternativeInfo(searchInfo);
-            const legCombined = combineOutboundInboundFlightInfo(lastFlight!, flight);
+            const legCombined = combineOutboundInboundFlightInfo(lastFlight, flight);
             const final = combineAlternativeRouteFlightInfo(combinedFlight!, legCombined);
             return {
                 type: 'save',
