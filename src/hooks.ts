@@ -2,7 +2,7 @@ import { log } from 'apify';
 import type { PlaywrightHook } from 'crawlee';
 
 import { LABELS } from './constants.js';
-import { extractFlightData } from './utils.js';
+import { extractFlightData } from './services/flight-data.js';
 
 export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
     if (request.label !== LABELS.SEARCH_OUTBOUND) return;

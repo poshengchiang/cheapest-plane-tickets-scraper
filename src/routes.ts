@@ -3,7 +3,7 @@ import { createPlaywrightRouter } from 'crawlee';
 import { LABELS } from './constants.js';
 import { getAndValidateFlightData } from './helpers.js';
 import { PIPELINES } from './pipeline.js';
-import { resultsStore } from './ResultsStore.js';
+import { resultsStore } from './services/ResultsStore.js';
 import type { PipelineUserData } from './types.js';
 import { createPipelineRequest } from './utils.js';
 

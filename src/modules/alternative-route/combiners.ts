@@ -1,21 +1,6 @@
 import { log } from 'apify';
 
-import type { FlightInfo } from './types.js';
-
-export function combineOutboundInboundFlightInfo(outbound: FlightInfo, inbound: FlightInfo): FlightInfo {
-    return {
-        totalPrice: inbound.totalPrice,
-        totalTimeMinutes: inbound.totalTimeMinutes + outbound.totalTimeMinutes,
-        departureCityName: outbound.departureCityName,
-        departureCityCode: outbound.departureCityCode,
-        targetCityName: outbound.targetCityName,
-        targetCityCode: outbound.targetCityCode,
-        totalFlights: inbound.totalFlights + outbound.totalFlights,
-        productId: inbound.productId,
-        policyId: inbound.policyId,
-        flights: [...outbound.flights, ...inbound.flights],
-    };
-}
+import type { FlightInfo } from '../../types.js';
 
 export function combineAlternativeRouteFlightInfo(leg1FlightInfo: FlightInfo, leg2FlightInfo: FlightInfo): FlightInfo {
     const intermediateArrivalIndex = leg1FlightInfo.flights.findIndex(

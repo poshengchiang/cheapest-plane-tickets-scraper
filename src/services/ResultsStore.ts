@@ -1,7 +1,7 @@
 import { Actor } from 'apify';
 
-import { RESULTS_KEY } from './constants.js';
-import type { RouteResult } from './types.js';
+import { RESULTS_KEY } from '../constants.js';
+import type { RouteResult } from '../types.js';
 
 class ResultsStore {
     private flightsCount = 0;
