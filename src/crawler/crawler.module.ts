@@ -4,10 +4,11 @@ import { AlternativeRouteModule } from '../modules/alternative-route/alternative
 import { DirectRouteModule } from '../modules/direct-route/direct-route.module.js';
 import { ServicesModule } from '../services/services.module.js';
 import { CrawlerService } from './crawler.service.js';
+import { CrawlerHooksService } from './crawler-hooks.service.js';
 
 @Module({
     imports: [ServicesModule, DirectRouteModule, AlternativeRouteModule],
-    providers: [CrawlerService],
+    providers: [CrawlerService, CrawlerHooksService],
     exports: [CrawlerService],
 })
 export class CrawlerModule {}

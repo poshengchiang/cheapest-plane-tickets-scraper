@@ -1,12 +1,16 @@
+import { Injectable } from '@nestjs/common';
 import { log } from 'apify';
 import type { PlaywrightHook } from 'crawlee';
 
 import { LABELS } from '../constants.js';
-import type { FlightDataService } from '../services/flight-data.service.js';
+import { FlightDataService } from '../services/flight-data.service.js';
 import type { InboundPipelineUserData, OutboundPipelineUserData } from '../types.js';
 
-export function createSSEHook(flightDataService: FlightDataService): PlaywrightHook {
-    return async ({ page, request }, gotoOptions) => {
+@Injectable()
+export class CrawlerHooksService {
+    constructor(private readonly flightDataService: FlightDataService) {}
+
+    readonly sseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
         if (request.label !== LABELS.SEARCH_OUTBOUND) return;
 
         // eslint-disable-next-line no-param-reassign
@@ -36,7 +40,7 @@ export function createSSEHook(flightDataService: FlightDataService): PlaywrightH
                         }
                     }
 
-                    const extractedFlightsData = flightDataService.extractFlightData(responseData);
+                    const extractedFlightsData = this.flightDataService.extractFlightData(responseData);
                     if (extractedFlightsData) return extractedFlightsData;
                     log.warning('No flight data extracted from SSE response');
                     return null;
@@ -50,10 +54,8 @@ export function createSSEHook(flightDataService: FlightDataService): PlaywrightH
                 return null;
             });
     };
-}
 
-export function createResponseHook(flightDataService: FlightDataService): PlaywrightHook {
-    return async ({ page, request }, gotoOptions) => {
+    readonly responseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
         if (request.label !== LABELS.SEARCH_INBOUND) return;
 
         // eslint-disable-next-line no-param-reassign
@@ -67,7 +69,7 @@ export function createResponseHook(flightDataService: FlightDataService): Playwr
             .then(async (response) => {
                 try {
                     const json = await response.json();
-                    const extractedFlightsData = flightDataService.extractFlightData(json);
+                    const extractedFlightsData = this.flightDataService.extractFlightData(json);
                     if (extractedFlightsData) return extractedFlightsData;
                     log.warning('No flight data extracted from flight search response');
                     return null;

@@ -1,22 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { Actor, log } from 'apify';
-import { createPlaywrightRouter,PlaywrightCrawler } from 'crawlee';
+import type { PlaywrightCrawlingContext } from 'crawlee';
+import { createPlaywrightRouter, PlaywrightCrawler } from 'crawlee';
 
+import { createInboundUrl, createOutBoundUrl } from '../common/utils/url-utils.js';
 import { LABELS } from '../constants.js';
 import { AlternativeRouteService } from '../modules/alternative-route/alternative-route.service.js';
 import { DirectRouteService } from '../modules/direct-route/direct-route.service.js';
-import { FlightDataService } from '../services/flight-data.service.js';
 import { ResultsStoreService } from '../services/results-store.service.js';
 import type {
+    FlightInfo,
     InboundPipelineUserData,
     OutboundPipelineUserData,
     PipelineName,
     PipelineStep,
     PipelineUserData,
 } from '../types.js';
-import { getAndValidateFlightData } from './helpers.js';
-import { createResponseHook, createSSEHook } from './hooks.js';
-import { createInboundUrl, createOutBoundUrl } from './url-utils.js';
+import { CrawlerHooksService } from './crawler-hooks.service.js';
 
 @Injectable()
 export class CrawlerService {
@@ -26,7 +26,7 @@ export class CrawlerService {
         private readonly directRouteService: DirectRouteService,
         private readonly alternativeRouteService: AlternativeRouteService,
         private readonly resultsStoreService: ResultsStoreService,
-        private readonly flightDataService: FlightDataService,
+        private readonly crawlerHooksService: CrawlerHooksService,
     ) {
         this.pipelines = {
             [directRouteService.pipelineName]: directRouteService.pipeline,
@@ -89,8 +89,8 @@ export class CrawlerService {
             },
             navigationTimeoutSecs: 60,
             preNavigationHooks: [
-                createSSEHook(this.flightDataService),
-                createResponseHook(this.flightDataService),
+                this.crawlerHooksService.sseHook,
+                this.crawlerHooksService.responseHook,
             ],
             launchContext: {
                 launchOptions: { args: ['--disable-gpu'] },
@@ -105,7 +105,7 @@ export class CrawlerService {
             const { pipelineName, stepIndex, searchInfo, combinedFlight } = request.userData;
             const step = this.pipelines[pipelineName][stepIndex];
 
-            const flights = await getAndValidateFlightData(request, 'sseResponsePromise');
+            const flights = await this.getAndValidateFlightData(request, 'sseResponsePromise');
 
             const nextRequests = flights.slice(0, step.fanOut).map((flight) =>
                 this.createPipelineRequest({
@@ -128,7 +128,7 @@ export class CrawlerService {
                 throw new Error(`Unexpected outbound step '${step.name}' in SEARCH_INBOUND handler`);
             }
 
-            const flights = await getAndValidateFlightData(request, 'flightResponsePromise');
+            const flights = await this.getAndValidateFlightData(request, 'flightResponsePromise');
 
             for (const flight of flights.slice(0, step.fanOut)) {
                 const result = step.execute({ flight, lastFlight, combinedFlight, searchInfo });
@@ -149,5 +149,19 @@ export class CrawlerService {
         });
 
         return router;
+    }
+
+    private async getAndValidateFlightData(
+        request: PlaywrightCrawlingContext['request'],
+        promiseKey: 'sseResponsePromise' | 'flightResponsePromise',
+    ): Promise<FlightInfo[]> {
+        const flightData = await request.userData[promiseKey];
+
+        if (!flightData) {
+            log.error(`${promiseKey} returned no data`);
+            throw new Error(`Missing flight data from ${promiseKey}`);
+        }
+
+        return flightData;
     }
 }
