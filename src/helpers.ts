@@ -3,9 +3,6 @@ import type { PlaywrightCrawlingContext } from 'crawlee';
 
 import type { FlightInfo } from './types.js';
 
-/**
- * Helper function to wait for and validate flight data from request.userData promises
- */
 export async function getAndValidateFlightData(
     request: PlaywrightCrawlingContext['request'],
     promiseKey: 'sseResponsePromise' | 'flightResponsePromise',
@@ -18,16 +15,4 @@ export async function getAndValidateFlightData(
     }
 
     return flightData;
-}
-
-/**
- * Helper function to validate required userData field
- */
-export function validateUserData<T>(userData: unknown, fieldName: string, errorMessage?: string): T {
-    if (!userData) {
-        const message = errorMessage || `Missing ${fieldName}`;
-        log.error(message);
-        throw new Error(message);
-    }
-    return userData as T;
 }

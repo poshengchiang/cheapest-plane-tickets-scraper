@@ -5,9 +5,6 @@ export interface TimePeriod {
     inboundDate: string; // YYYY-MM-DD format
 }
 
-/**
- * Input parameters for the Actor
- */
 export interface Input {
     mainDepartureCity: string; // Primary departure city/airport code (e.g., 'TPE')
     targetCity: string; // Final destination city/airport code (e.g., 'NRT')
@@ -50,17 +47,11 @@ export interface PipelineUserData {
     flightResponsePromise?: Promise<FlightInfo[] | null>;
 }
 
-/**
- * Flight segment information
- */
 export interface FlightSegment {
     airline: string; // e.g., "EVA Air"
     flightNumber: string; // e.g., "BR189"
 }
 
-/**
- * Individual flight leg information
- */
 export interface FlightLeg {
     departureCityCode: string;
     departureAirport: string;
@@ -97,11 +88,6 @@ export interface RouteResult {
     flightInfo: FlightInfo;
 }
 
-/**
- * Flights http response structure
- */
-
-// Response data structures
 interface FlightPoint {
     cityCode: string;
     cityName: string;

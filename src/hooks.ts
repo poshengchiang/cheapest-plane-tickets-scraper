@@ -4,21 +4,12 @@ import type { PlaywrightHook } from 'crawlee';
 import { LABELS } from './constants.js';
 import { extractFlightData } from './utils.js';
 
-/**
- * Pre-navigation hook to capture SSE (Server-Sent Events) responses from Trip.com API
- * Sets up a promise that waits for the response and stores it in request.userData for the handler to await
- */
 export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
-    if (
-        request.label !== LABELS.SEARCH_OUTBOUND
-    ) {
-        return;
-    }
+    if (request.label !== LABELS.SEARCH_OUTBOUND) return;
 
     // eslint-disable-next-line no-param-reassign
     gotoOptions.waitUntil = 'domcontentloaded';
 
-    // Store the response promise in userData for the handler to await
     request.userData.sseResponsePromise = page
         .waitForResponse(
             (response) => response.url().endsWith('FlightListSearchSSE') && response.status() === 200,
@@ -27,15 +18,12 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
         .then(async (response) => {
             try {
                 const text = await response.text();
-
-                // Parse SSE events
                 const lines = text.split('\n');
-
                 let responseData = null;
 
                 for (const line of lines) {
                     if (line.startsWith('data:')) {
-                        const data = line.slice(5).trim(); // Remove 'data:' prefix and trim
+                        const data = line.slice(5).trim();
                         if (data) {
                             try {
                                 responseData = JSON.parse(data);
@@ -47,9 +35,7 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
                 }
 
                 const extractedFlightsData = extractFlightData(responseData);
-                if (extractedFlightsData) {
-                    return extractedFlightsData;
-                }
+                if (extractedFlightsData) return extractedFlightsData;
                 log.warning('No flight data extracted from SSE response');
                 return null;
             } catch (error) {
@@ -63,21 +49,12 @@ export const captureSSEResponseHook: PlaywrightHook = async ({ page, request }, 
         });
 };
 
-/**
- * Pre-navigation hook to capture flight search responses from Trip.com API
- * Sets up a promise that waits for the response and stores it in request.userData for the handler to await
- */
 export const captureResponseHook: PlaywrightHook = async ({ page, request }, gotoOptions) => {
-    if (
-        request.label !== LABELS.SEARCH_INBOUND
-    ) {
-        return;
-    }
+    if (request.label !== LABELS.SEARCH_INBOUND) return;
 
     // eslint-disable-next-line no-param-reassign
     gotoOptions.waitUntil = 'domcontentloaded';
 
-    // Store the response promise in userData for the handler to await
     request.userData.flightResponsePromise = page
         .waitForResponse(
             (response) => response.url().endsWith('FlightListSearch') && response.status() === 200,
@@ -87,9 +64,7 @@ export const captureResponseHook: PlaywrightHook = async ({ page, request }, got
             try {
                 const json = await response.json();
                 const extractedFlightsData = extractFlightData(json);
-                if (extractedFlightsData) {
-                    return extractedFlightsData;
-                }
+                if (extractedFlightsData) return extractedFlightsData;
                 log.warning('No flight data extracted from flight search response');
                 return null;
             } catch (error) {
