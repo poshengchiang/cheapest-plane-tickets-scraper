@@ -63,7 +63,9 @@ export class AlternativeRouteService {
                 execute: ({ flight, lastFlight, combinedFlight, searchInfo }) => {
                     const alt = asAlternativeInfo(searchInfo);
                     const legCombined = this.flightDataService.combineOutboundInboundFlightInfo(lastFlight, flight);
-                    const final = combineAlternativeRouteFlightInfo(combinedFlight!, legCombined);
+                    if (!combinedFlight) throw new Error('Missing combined flight from previous steps');
+
+                    const final = combineAlternativeRouteFlightInfo(combinedFlight, legCombined);
                     return {
                         type: 'save',
                         results: [{
